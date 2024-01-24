@@ -65,8 +65,10 @@ def submit_recipe():
                     submission_md5=md5
                     )
     db.session.add(recipe)
-    print(recipe)
-    embeddings = DescriptionEmbeddings(recipe_id=recipe.id, embeddings=embeddings)
+    db.session.commit()
+    recipe_id = recipe.id
+    print(f"new recipe: {recipe_id}")
+    embeddings = DescriptionEmbeddings(recipe_id=recipe_id, embeddings=embeddings)
     db.session.add(embeddings)
     db.session.commit()
 
