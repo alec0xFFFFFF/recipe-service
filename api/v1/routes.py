@@ -28,9 +28,9 @@ def submit_recipe():
     ocr_text = extract.extractText(file)
 
     # don't double process same image
-    # result = db.session.query(Recipe).filter(Recipe.submission_md5 == md5).first()
-    # if result:
-    #     return result.to_dict()
+    result = db.session.query(Recipe).filter(Recipe.submission_md5 == md5).first()
+    if result:
+        return result.to_dict()
 
     agent = baseAgent.Agent()
     ingredients = agent.generate_response(
@@ -49,8 +49,8 @@ def submit_recipe():
         f"You are a recipe description agent. Your goal is to return a very descriptive 15-30 word description of the dish in the recipe. You must describe the type of food it is, taste, cuisine (e.g. italian), seasonality, ingredients, and ease.",
         ocr_text)
     title = agent.generate_response(
-        f"You are a recipe titling agent. Your goal is to return a succinct yet descriptive title for a dish.", text)
-    author = agent.generate_response("Extract the author or writer of the recipe. If there is none return <none>", text)
+        f"You are a recipe titling agent. Your goal is to return a succinct yet descriptive title for a dish.", ocr_text)
+    author = agent.generate_response("Extract the author or writer of the recipe. If there is none return <none>", ocr_text)
     # todo store file in s3 to audit? or check hash of file before processing?
 
     embeddings = agent.get_embedding(description)
@@ -67,7 +67,6 @@ def submit_recipe():
     db.session.add(recipe)
     db.session.commit()
     recipe_id = recipe.id
-    print(f"new recipe: {recipe_id}")
     embeddings = DescriptionEmbeddings(recipe_id=recipe_id, embeddings=embeddings)
     db.session.add(embeddings)
     db.session.commit()
