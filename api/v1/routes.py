@@ -84,7 +84,7 @@ def generate_image():
     if file.filename == '':
         return 'No selected file'
     # submit image, add description, use prompt and do a dalle-2 variation
-    byte_array = file.stream
+    byte_array = file.stream.read()
     agent = baseAgent.Agent()
     url = agent.get_image_variations(byte_array)
     return jsonify({"image": url})
