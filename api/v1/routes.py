@@ -96,6 +96,8 @@ def search_for_recipe():
     # Retrieve the rows from the result
     rows = result.fetchall()
 
+    print("query returned:")
+    print(rows)
     # Print the results (or process them as needed)
     for row in rows:
         print(row)
