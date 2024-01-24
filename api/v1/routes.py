@@ -82,7 +82,7 @@ def search_for_recipe():
 
     sql_query = text("""
         SELECT * FROM description_embeddings
-        ORDER BY embeddings <-> CAST(:embeddings AS double precision[])
+        ORDER BY embeddings <-> :embeddings::double precision[]
         LIMIT 5
     """)
 

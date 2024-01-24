@@ -2,3 +2,9 @@
 
 
 [pg_vector](https://github.com/pgvector/pgvector)
+
+
+ROADMAP
+- suggest meal
+- create shopping list
+- merge instructions to make meal/make the full plan

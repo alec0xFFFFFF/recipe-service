@@ -19,6 +19,7 @@ class Recipe(db.Model):
     submission_md5 = db.Column(db.Text, nullable=True)
     deleted = db.Column(Boolean, nullable=False, default=False)
 
+    # todo store servings
     def to_dict(self):
         return {
             'id': self.id,
