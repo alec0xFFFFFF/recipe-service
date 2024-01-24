@@ -1,5 +1,3 @@
-import os
-
 from flask import Flask, request
 from agents import baseAgent
 import extract
@@ -55,8 +53,4 @@ def submit_recipe():
 
 
 if __name__ == '__main__':
-    env = os.getenv('ENV')
-    if env == 'local':
-        app.run()
-    else:
-        app.run(host='0.0.0.0', port=80, debug=False)
+    app.run()
