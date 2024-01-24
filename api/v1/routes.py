@@ -50,9 +50,6 @@ def submit_recipe():
 
     embeddings = agent.get_embedding(description)
 
-    # todo store this stuff in vector db
-    print(embeddings)
-
     recipe = Recipe(ingredients=ingredients,
                     steps=steps,
                     equipment=equipment,
@@ -80,9 +77,11 @@ def search_for_recipe():
 
     embeddings = agent.get_embedding(query_string)
     sql_query = text("""
-        SELECT * FROM description_embeddings
+        SELECT * FROM
+        WHERE id IN (
+        SELECT recipe_id FROM description_embeddings
         ORDER BY embeddings <-> CAST(:embeddings AS vector)
-        LIMIT 5
+        LIMIT 5)
     """)
 
     query_params = {"embeddings": embeddings}
@@ -98,10 +97,10 @@ def search_for_recipe():
 
     # Serialize the results
     closest_embeddings = [
-        {"id": row.id, "embedding": row.embeddings, "recipe_id": row.recipe_id} for row in
-        result]
+        {"author": row.author, "title": row.title, "description": row.description} for row in
+        rows]
 
-    return jsonify({"closest_embeddings": closest_embeddings})
+    return jsonify({"dishes": closest_embeddings})
 
 
 def init_api_v1(app):
