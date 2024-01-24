@@ -82,7 +82,7 @@ def search_for_recipe():
 
     sql_query = text("""
         SELECT * FROM description_embeddings
-        ORDER BY embeddings <-> : embeddings)
+        ORDER BY embeddings <-> :embeddings
         LIMIT 5
     """)
 
