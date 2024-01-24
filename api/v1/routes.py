@@ -79,10 +79,9 @@ def search_for_recipe():
         return jsonify({"error": "No query string provided"}), 400
 
     embeddings = agent.get_embedding(query_string)
-    print(f"embeddings length: {len(embeddings)}")
     sql_query = text("""
         SELECT * FROM description_embeddings
-        ORDER BY embeddings <-> :embeddings
+        ORDER BY embeddings <-> :embeddings::vector
         LIMIT 5
     """)
 
