@@ -63,7 +63,7 @@ def submit_recipe():
                     submission_md5=md5
                     )
     db.session.add(recipe)
-    embeddings = DescriptionEmbeddings(recipe_id=recipe.id, embeddings=embeddings)
+    embeddings = DescriptionEmbeddings(recipe_id=recipe.id, embeddings=embeddings, new_embedding=embeddings)
     db.session.add(embeddings)
     db.session.commit()
 
@@ -79,10 +79,10 @@ def search_for_recipe():
         return jsonify({"error": "No query string provided"}), 400
 
     embeddings = agent.get_embedding(query_string)
-
+    print(f"embeddings length: {len(embeddings)}")
     sql_query = text("""
         SELECT * FROM description_embeddings
-        ORDER BY embeddings <-> :embeddings::double precision[]
+        ORDER BY new_embedding <-> :embeddings
         LIMIT 5
     """)
 

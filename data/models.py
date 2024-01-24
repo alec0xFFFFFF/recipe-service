@@ -40,10 +40,12 @@ class DescriptionEmbeddings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     recipe_id = db.Column(db.Integer, ForeignKey('recipe.id'))
     embeddings = db.Column(ARRAY(db.Float))  # Use ARRAY to store embeddings
+    new_embedding = db.Column(db.Float)  # New column for OpenAI embeddings (vector(128))
 
     def to_dict(self):
         return {
             'id': self.id,
             'embeddings': self.embeddings,
+            'new_embedding': self.new_embedding,
             'recipe_id': self.recipe_id,
         }
