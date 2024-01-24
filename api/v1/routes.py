@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 
 import extract
 from agents import baseAgent
+from sqlalchemy import func
 from data.models import db, Recipe, DescriptionEmbeddings
 
 bp = Blueprint('bp', __name__)
@@ -67,6 +68,30 @@ def submit_recipe():
     db.session.commit()
 
     return recipe.to_dict()
+
+
+@bp.route('/', methods=['GET'])
+def search_for_recipe():
+    agent = baseAgent.Agent()
+    query_string = request.args.get('query', '')
+
+    if not query_string:
+        return jsonify({"error": "No query string provided"}), 400
+
+    embeddings = agent.get_embedding(query_string)
+    subquery = db.session.query(
+        DescriptionEmbeddings,
+        func.pg_similarity_cosine(DescriptionEmbeddings.embeddings, embeddings).label('similarity')
+    ).order_by(func.pg_similarity_cosine(DescriptionEmbeddings.embeddings, embeddings).desc()).limit(3).subquery()
+
+    result = db.session.query(subquery.c.id, subquery.c.embeddings, subquery.c.similarity)
+
+    # Serialize the results
+    closest_embeddings = [
+        {"id": row.id, "embedding": row.embeddings, "similarity": row.similarity, "recipe_id": row.recipe_id} for row in
+        result]
+
+    return jsonify({"closest_embeddings": closest_embeddings})
 
 
 def init_api_v1(app):
