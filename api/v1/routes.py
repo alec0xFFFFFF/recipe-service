@@ -1,32 +1,13 @@
-import os
+from flask import Blueprint, request, jsonify
 
-from flask import Flask, request
-from agents import baseAgent
 import extract
+from agents import baseAgent
 from data.models import db, Recipe, DescriptionEmbeddings
 
-app = Flask(__name__)
-
-with app.app_context():
-    db.create_all()
-
-db_params = {
-    "dbname": os.environ.get("PGDATABASE"),
-    "user": os.environ.get("PGUSER"),
-    "password": os.environ.get("PGPASSWORD"),
-    "host": os.environ.get("PGHOST"),
-    "port": int(os.environ.get("PGPORT"))
-}
-
-# Database configuration
-app.config[
-    'SQLALCHEMY_DATABASE_URI'] = f'postgresql://{db_params["user"]}:{db_params["password"]}@{db_params["host"]}:{db_params["port"]}/{db_params["dbname"]}'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db.init_app(app)
+bp = Blueprint('bp', __name__)
 
 
-@app.route('/', methods=['POST'])
+@bp.route('/', methods=['POST'])
 def submit_recipe():
     # input of an image
     # three agents to split up
@@ -88,5 +69,5 @@ def submit_recipe():
     return recipe.to_dict()
 
 
-if __name__ == '__main__':
-    app.run()
+def init_api_v1(app):
+    app.register_blueprint(bp, url_prefix='/v1')
