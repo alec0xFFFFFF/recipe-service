@@ -30,7 +30,7 @@ def submit_recipe():
     # don't double process same image
     result = db.session.query(Recipe).filter(Recipe.submission_md5 == md5).first()
     if result:
-        return result.to_dict()
+        return jsonify(result.to_dict())
 
     agent = baseAgent.Agent()
     ingredients = agent.generate_response(
@@ -74,6 +74,22 @@ def submit_recipe():
     return recipe.to_dict()
 
 
+@bp.route('/image', methods=['POST'])
+def generate_image():
+    if 'food' not in request.files:
+        return 'No file part'
+
+    file = request.files['food']
+
+    if file.filename == '':
+        return 'No selected file'
+    # submit image, add description, use prompt and do a dalle-2 variation
+    byte_array = file.stream
+    agent = baseAgent.Agent()
+    url = agent.get_image_variations(byte_array)
+    return jsonify({"image": url})
+
+
 @bp.route('/', methods=['GET'])
 def search_for_recipe():
     agent = baseAgent.Agent()
@@ -97,12 +113,6 @@ def search_for_recipe():
 
     # Retrieve the rows from the result
     rows = result.fetchall()
-
-    print("query returned:")
-    print(rows)
-    # Print the results (or process them as needed)
-    for row in rows:
-        print(row)
 
     # Serialize the results
     closest_embeddings = [

@@ -23,3 +23,12 @@ class Agent:
     def get_embedding(self, text, model="text-embedding-ada-002"):
         text = text.replace("\n", " ")
         return client.embeddings.create(input=[text], model=model).data[0].embedding
+
+    def get_image_variations(self, byte_array):
+        response = client.images.create_variation(
+            image=byte_array,
+            n=1,
+            model="dall-e-2",
+            size="1024x1024"
+        )
+        return response.data[0].url
