@@ -9,6 +9,8 @@ app = create_api()
 with app.app_context():
     db.create_all()
     try:
+        db.session.execute(text("SHOW shared_preload_libraries;"))
+        db.session.execute(text("DROP EXTENSION IF EXISTS pg_similarity;"))
         db.session.execute(text("CREATE EXTENSION IF NOT EXISTS pg_similarity;"))
         db.session.commit()
         print("pg_similarity extension created successfully.")
