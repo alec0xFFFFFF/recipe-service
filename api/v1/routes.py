@@ -81,7 +81,7 @@ def search_for_recipe():
     embeddings = agent.get_embedding(query_string)
     sql_query = text("""
         SELECT * FROM description_embeddings
-        ORDER BY embeddings <-> :embeddings::vector
+        ORDER BY embeddings <-> CAST(:embeddings AS vector)
         LIMIT 5
     """)
 
