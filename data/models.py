@@ -39,13 +39,12 @@ class Recipe(db.Model):
 class DescriptionEmbeddings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     recipe_id = db.Column(db.Integer, ForeignKey('recipe.id'))
-    embeddings = db.Column(ARRAY(db.Float))  # Use ARRAY to store embeddings
-    new_embedding = db.Column(db.Float)  # New column for OpenAI embeddings (vector(128))
+    embeddings = db.Column(ARRAY(db.Float))  # 1536
+    ## ALTER TABLE description_embeddings ALTER COLUMN embeddings TYPE vector(1536) USING embeddings::vector(1536)
 
     def to_dict(self):
         return {
             'id': self.id,
             'embeddings': self.embeddings,
-            'new_embedding': self.new_embedding,
             'recipe_id': self.recipe_id,
         }

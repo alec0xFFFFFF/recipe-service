@@ -63,7 +63,7 @@ def submit_recipe():
                     submission_md5=md5
                     )
     db.session.add(recipe)
-    embeddings = DescriptionEmbeddings(recipe_id=recipe.id, embeddings=embeddings, new_embedding=embeddings)
+    embeddings = DescriptionEmbeddings(recipe_id=recipe.id, embeddings=embeddings)
     db.session.add(embeddings)
     db.session.commit()
 
@@ -82,7 +82,7 @@ def search_for_recipe():
     print(f"embeddings length: {len(embeddings)}")
     sql_query = text("""
         SELECT * FROM description_embeddings
-        ORDER BY new_embedding <-> :embeddings
+        ORDER BY embeddings <-> :embeddings
         LIMIT 5
     """)
 
