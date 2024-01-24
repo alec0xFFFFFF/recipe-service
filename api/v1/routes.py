@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 
 import extract
 from agents import baseAgent
-from sqlalchemy import func
+from sqlalchemy import func, text
 from data.models import db, Recipe, DescriptionEmbeddings
 
 bp = Blueprint('bp', __name__)
@@ -79,16 +79,27 @@ def search_for_recipe():
         return jsonify({"error": "No query string provided"}), 400
 
     embeddings = agent.get_embedding(query_string)
-    subquery = db.session.query(
-        DescriptionEmbeddings,
-        func.pg_similarity_cosine(DescriptionEmbeddings.embeddings, embeddings).label('similarity')
-    ).order_by(func.pg_similarity_cosine(DescriptionEmbeddings.embeddings, embeddings).desc()).limit(3).subquery()
 
-    result = db.session.query(subquery.c.id, subquery.c.embeddings, subquery.c.similarity)
+    sql_query = text("""
+        SELECT * FROM description_embeddings
+        ORDER BY embeddings <-> : embeddings)
+        LIMIT 5
+    """)
+
+    query_params = {"embeddings": embeddings}
+
+    result = db.session.execute(sql_query, query_params)
+
+    # Retrieve the rows from the result
+    rows = result.fetchall()
+
+    # Print the results (or process them as needed)
+    for row in rows:
+        print(row)
 
     # Serialize the results
     closest_embeddings = [
-        {"id": row.id, "embedding": row.embeddings, "similarity": row.similarity, "recipe_id": row.recipe_id} for row in
+        {"id": row.id, "embedding": row.embeddings, "recipe_id": row.recipe_id} for row in
         result]
 
     return jsonify({"closest_embeddings": closest_embeddings})
