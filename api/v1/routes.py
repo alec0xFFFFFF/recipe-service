@@ -28,9 +28,9 @@ def submit_recipe():
     ocr_text = extract.extractText(file)
 
     # don't double process same image
-    result = db.session.query(Recipe).filter(Recipe.submission_md5 == md5).first()
-    if result:
-        return result.to_dict()
+    # result = db.session.query(Recipe).filter(Recipe.submission_md5 == md5).first()
+    # if result:
+    #     return result.to_dict()
 
     agent = baseAgent.Agent()
     ingredients = agent.generate_response(
@@ -65,7 +65,6 @@ def submit_recipe():
                     submission_md5=md5
                     )
     db.session.add(recipe)
-    db.session.commit()
     print(recipe)
     embeddings = DescriptionEmbeddings(recipe_id=recipe.id, embeddings=embeddings)
     db.session.add(embeddings)
