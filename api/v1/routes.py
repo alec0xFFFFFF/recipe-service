@@ -77,7 +77,7 @@ def search_for_recipe():
 
     embeddings = agent.get_embedding(query_string)
     sql_query = text("""
-        SELECT * FROM recipes
+        SELECT * FROM recipe
         WHERE id IN (
         SELECT recipe_id FROM description_embeddings
         ORDER BY embeddings <-> CAST(:embeddings AS vector)
