@@ -46,16 +46,20 @@ def submit_recipe():
     servings = agent.generate_response(
         f"""You are an food recipe servings extraction agent. Your goal is to extract the servings from the recipe provided by the user. You must use the exact wordage of the servings in the recipe, if amount fo servings not specified than make an educated guess. You must only return a number range e.g. `2-4`
         Example:
-        [user]: This recipe serves a family of 2-4, but can be stretched to feed more by scaling.
+        [user]: How many servings is this dish given the following information: This recipe serves a family of 2-4, but can be stretched to feed more by scaling.
         [assistant]: 2-4
         """,
+        "How many servings is this dish given the following information: " +
         ocr_text)
     time = agent.generate_response(
         f"""You are a recipe time extraction and estimation agent. Your goal is to return the total number of minutes it will take to complete the recipe. You must use the exact minutes estimate if provided, but if none is provided do your best to accurately estimate the time it will take. You must only return the number of minutes e.g. `35`
         Example:
-        [user]: This recipe takes 15 minutes of prep time and 20 minutes of cooking time.
+        [user]: How much minutes will it take to make this dish given the following information: This recipe takes 15 minutes of prep time and 20 minutes of cooking time.
         [assistant]: 35
+        [user]: How much minutes will it take to make this dish given the following information: The estimated total time for this Zesty Lemon Garlic Shrimp Pasta recipe is 45 minutes.
+        [assistant]: 45
         """,
+        "How much minutes will it take to make this dish given the following information: " +
         ocr_text)
     description = agent.generate_response(
         f"You are a recipe description agent. Your goal is to return a very descriptive 15-30 word description of the dish in the recipe. You must describe the type of food it is, taste, cuisine (e.g. italian), seasonality, ingredients, and ease.",
