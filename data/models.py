@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Boolean, ForeignKey, DateTime, event, text
-from sqlalchemy.dialects.postgresql import ARRAY,  NUMERIC, RANGE
+from sqlalchemy.dialects.postgresql import ARRAY, NUMERIC, Range
 from datetime import datetime
 
 db = SQLAlchemy()
@@ -10,7 +10,7 @@ class Recipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     created_at = db.Column(DateTime, default=datetime.utcnow)
     ingredients = db.Column(db.Text, nullable=True)
-    servings = db.Column(RANGE(NUMERIC), nullable=True)
+    servings = db.Column(Range(NUMERIC), nullable=True)
     steps = db.Column(db.Text, nullable=True)
     equipment = db.Column(db.Text, nullable=True)
     time = db.Column(db.Integer, nullable=True)
