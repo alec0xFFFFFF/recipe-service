@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from psycopg2.extras import NumericRange
 
 import extract
 from agents import baseAgent
@@ -103,10 +104,10 @@ def parse_numeric_range_or_null(input_string):
     try:
         if "-" in input_string:
             start, end = map(float, input_string.split("-"))
-            return range(int(start), int(end) + 1)
+            return NumericRange(int(start), int(end) + 1)
         else:
             value = float(input_string)
-            return range(int(value), int(value) + 1)
+            return NumericRange(int(value), int(value) + 1)
     except ValueError:
         return None
 
