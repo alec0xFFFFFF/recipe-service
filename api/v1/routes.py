@@ -43,15 +43,15 @@ def submit_recipe():
     equipment = agent.generate_response(
         f"You are an food recipe equipment extraction agent. Your goal is to extract the equipment from the recipe provided by the user. You must use the exact wordage of the equipment in the recipe, but return a bulletted list of all equipment.",
         ocr_text)
-    servings = agent.generate_response(
+    servings = parse_numeric_range_or_null(agent.generate_response(
         f"""You are an food recipe servings extraction agent. Your goal is to extract the servings from the recipe provided by the user. You must use the exact wordage of the servings in the recipe, if amount fo servings not specified than make an educated guess. You must only return a number range e.g. `2-4`
         Example:
         [user]: How many servings is this dish given the following information: This recipe serves a family of 2-4, but can be stretched to feed more by scaling.
         [assistant]: 2-4
         """,
         "How many servings is this dish given the following information: " +
-        ocr_text)
-    time = agent.generate_response(
+        ocr_text))
+    time = parse_int_or_null(agent.generate_response(
         f"""You are a recipe time extraction and estimation agent. Your goal is to return the total number of minutes it will take to complete the recipe. You must use the exact minutes estimate if provided, but if none is provided do your best to accurately estimate the time it will take. You must only return the number of minutes e.g. `35`
         Example:
         [user]: How much minutes will it take to make this dish given the following information: This recipe takes 15 minutes of prep time and 20 minutes of cooking time.
@@ -60,7 +60,7 @@ def submit_recipe():
         [assistant]: 45
         """,
         "How much minutes will it take to make this dish given the following information: " +
-        ocr_text)
+        ocr_text))
     description = agent.generate_response(
         f"You are a recipe description agent. Your goal is to return a very descriptive 15-30 word description of the dish in the recipe. You must describe the type of food it is, taste, cuisine (e.g. italian), seasonality, ingredients, and ease.",
         ocr_text)
@@ -92,6 +92,23 @@ def submit_recipe():
 
     return recipe.to_dict()
 
+def parse_int_or_null(input_string):
+    try:
+        return int(input_string)
+    except ValueError:
+        return None
+
+def parse_numeric_range_or_null(input_string):
+    # Check if the input_string contains a hyphen ("-")
+    try:
+        if "-" in input_string:
+            start, end = map(float, input_string.split("-"))
+            return range(int(start), int(end) + 1)
+        else:
+            value = float(input_string)
+            return range(int(value), int(value) + 1)
+    except ValueError:
+        return None
 
 @bp.route('/image', methods=['POST'])
 def generate_image():

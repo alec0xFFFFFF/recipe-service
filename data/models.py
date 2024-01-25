@@ -10,7 +10,7 @@ class Recipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     created_at = db.Column(DateTime, default=datetime.utcnow)
     ingredients = db.Column(db.Text, nullable=True)
-    servings = db.Column(db.Integer, nullable=True)
+    servings = db.Column(db.RANGE(db.NUMERIC), nullable=True)
     steps = db.Column(db.Text, nullable=True)
     equipment = db.Column(db.Text, nullable=True)
     time = db.Column(db.Integer, nullable=True)
