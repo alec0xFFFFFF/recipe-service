@@ -9,7 +9,6 @@ from data.models import db, Recipe, DescriptionEmbeddings, IngredientsEmbeddings
 bp = Blueprint('bp', __name__)
 
 
-
 @bp.route('/', methods=['POST'])
 def submit_recipe():
     # input of an image
@@ -66,8 +65,10 @@ def submit_recipe():
         f"You are a recipe description agent. Your goal is to return a very descriptive 15-30 word description of the dish in the recipe. You must describe the type of food it is, taste, cuisine (e.g. italian), seasonality, ingredients, and ease.",
         ocr_text)
     title = agent.generate_response(
-        f"You are a recipe titling agent. Your goal is to return a succinct yet descriptive title for a dish.", ocr_text)
-    author = agent.generate_response("Extract the author or writer of the recipe. If there is none return <none>", ocr_text)
+        f"You are a recipe titling agent. Your goal is to return a succinct yet descriptive title for a dish.",
+        ocr_text)
+    author = agent.generate_response("Extract the author or writer of the recipe. If there is none return <none>",
+                                     ocr_text)
 
     description_embeddings = agent.get_embedding(description)
     ingredients_embeddings = agent.get_embedding(ingredients)
@@ -93,23 +94,32 @@ def submit_recipe():
 
     return recipe.to_dict()
 
+
 def parse_int_or_null(input_string):
     try:
-        return int(input_string)
+        res = int(input_string)
+        print(f"parsed int: {res}")
+        return res
     except ValueError:
         return None
+
 
 def parse_numeric_range_or_null(input_string):
     # Check if the input_string contains a hyphen ("-")
     try:
         if "-" in input_string:
             start, end = map(float, input_string.split("-"))
-            return NumericRange(int(start), int(end) + 1)
+            res = NumericRange(int(start), int(end) + 1)
+            print(f"parsed numeric range: {res}")
+            return res
         else:
             value = float(input_string)
-            return NumericRange(int(value), int(value) + 1)
+            res = NumericRange(int(value), int(value) + 1)
+            print(f"parsed numeric range: {res}")
+            return res
     except ValueError:
         return None
+
 
 @bp.route('/image', methods=['POST'])
 def generate_image():
