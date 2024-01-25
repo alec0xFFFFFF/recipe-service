@@ -15,3 +15,9 @@ ROADMAP
 - generate photos for steps
 - generate photo combining meal
 - generate photo for shopping list
+
+
+Use Case:
+- everyday cooking/weekly mealplannning and shopping
+- thanksgiving
+- weekend trip/airbnb rentals create shopping list

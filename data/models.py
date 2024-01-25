@@ -68,7 +68,7 @@ def after_description_create_listener(target, connection, **kw):
         "ALTER TABLE description_embeddings ALTER COLUMN embeddings TYPE vector(1536) USING embeddings::vector(1536)")
 
 
-@event.listens_for(DescriptionEmbeddings, 'after_create')
+@event.listens_for(DescriptionEmbeddings.__table__, 'after_create')
 def after_description_create(target, connection, **kw):
     after_description_create_listener(target, connection, **kw)
 
@@ -78,6 +78,6 @@ def after_ingredient_create_listener(target, connection, **kw):
         "ALTER TABLE ingredients_embeddings ALTER COLUMN embeddings TYPE vector(1536) USING embeddings::vector(1536)")
 
 
-@event.listens_for(IngredientsEmbeddings, 'after_create')
+@event.listens_for(IngredientsEmbeddings.__table__, 'after_create')
 def after_ingredient_create(target, connection, **kw):
     after_ingredient_create_listener(target, connection, **kw)
