@@ -65,7 +65,7 @@ class IngredientsEmbeddings(db.Model):
 
 def after_description_create_listener(target, connection, **kw):
     connection.execute(text(
-        "ALTER TABLE description_embeddings ALTER COLUMN embeddings TYPE vector(1536) USING embeddings::vector(1536);"))
+        "ALTER TABLE description_embeddings ALTER COLUMN embeddings TYPE vector(3072) USING embeddings::vector(3072);"))
 
 
 @event.listens_for(DescriptionEmbeddings.__table__, 'after_create')
@@ -75,7 +75,7 @@ def after_description_create(target, connection, **kw):
 
 def after_ingredient_create_listener(target, connection, **kw):
     connection.execute(text(
-        "ALTER TABLE ingredients_embeddings ALTER COLUMN embeddings TYPE vector(1536) USING embeddings::vector(1536);"))
+        "ALTER TABLE ingredients_embeddings ALTER COLUMN embeddings TYPE vector(3072) USING embeddings::vector(3072);"))
 
 
 @event.listens_for(IngredientsEmbeddings.__table__, 'after_create')

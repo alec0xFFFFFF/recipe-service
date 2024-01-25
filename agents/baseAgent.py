@@ -20,7 +20,7 @@ class Agent:
         except Exception as e:
             return str(e)
 
-    def get_embedding(self, text, model="text-embedding-ada-002"):
+    def get_embedding(self, text, model="text-embedding-3-large"):
         text = text.replace("\n", " ")
         return client.embeddings.create(input=[text], model=model).data[0].embedding
 
