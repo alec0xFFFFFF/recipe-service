@@ -5,6 +5,13 @@
 
 
 ROADMAP
+- suggest dish
 - suggest meal
 - create shopping list
 - merge instructions to make meal/make the full plan
+- keep track of your ingredients you have i.e. fridge and pantry management
+- critique food photo
+- gen ai photo
+- generate photos for steps
+- generate photo combining meal
+- generate photo for shopping list

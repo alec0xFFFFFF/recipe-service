@@ -2,10 +2,11 @@ from flask import Blueprint, request, jsonify
 
 import extract
 from agents import baseAgent
-from sqlalchemy import func, text
-from data.models import db, Recipe, DescriptionEmbeddings
+from sqlalchemy import text
+from data.models import db, Recipe, DescriptionEmbeddings, IngredientsEmbeddings
 
 bp = Blueprint('bp', __name__)
+
 
 
 @bp.route('/', methods=['POST'])
@@ -42,8 +43,11 @@ def submit_recipe():
     equipment = agent.generate_response(
         f"You are an food recipe equipment extraction agent. Your goal is to extract the equipment from the recipe provided by the user. You must use the exact wordage of the equipment in the recipe, but return a bulletted list of all equipment.",
         ocr_text)
+    servings = agent.generate_response(
+        f"You are an food recipe servings extraction agent. Your goal is to extract the servings from the recipe provided by the user. You must use the exact wordage of the servings in the recipe, if amount fo servings not specified than make an educated guess. You must only return a number range e.g. `2-4`",
+        ocr_text)
     time = agent.generate_response(
-        f"You are a recipe time extraction and estimation agent. Your goal is to return the total number of minutes it will take to complete the recipe. You must use the exact minutes estimate if provided, but if none is provided do your best to accurately estimate the time it will take. Only return the number of minutes ex: 35.",
+        f"You are a recipe time extraction and estimation agent. Your goal is to return the total number of minutes it will take to complete the recipe. You must use the exact minutes estimate if provided, but if none is provided do your best to accurately estimate the time it will take. You must only return the number of minutes e.g. `35`",
         ocr_text)
     description = agent.generate_response(
         f"You are a recipe description agent. Your goal is to return a very descriptive 15-30 word description of the dish in the recipe. You must describe the type of food it is, taste, cuisine (e.g. italian), seasonality, ingredients, and ease.",
@@ -53,13 +57,15 @@ def submit_recipe():
     author = agent.generate_response("Extract the author or writer of the recipe. If there is none return <none>", ocr_text)
     # todo store file in s3 to audit? or check hash of file before processing?
 
-    embeddings = agent.get_embedding(description)
+    description_embeddings = agent.get_embedding(description)
+    ingredients_embeddings = agent.get_embedding(ingredients)
 
     recipe = Recipe(ingredients=ingredients,
                     steps=steps,
                     equipment=equipment,
                     time=time,
                     description=description,
+                    servings=servings,
                     title=title,
                     author=author,
                     submission_md5=md5
@@ -67,8 +73,10 @@ def submit_recipe():
     db.session.add(recipe)
     db.session.commit()
     recipe_id = recipe.id
-    embeddings = DescriptionEmbeddings(recipe_id=recipe_id, embeddings=embeddings)
-    db.session.add(embeddings)
+    description_embeddings = DescriptionEmbeddings(recipe_id=recipe_id, embeddings=description_embeddings)
+    ingredients_embeddings = IngredientsEmbeddings(recipe_id=recipe_id, embeddings=ingredients_embeddings)
+    db.session.add(description_embeddings)
+    db.session.add(ingredients_embeddings)
     db.session.commit()
 
     return recipe.to_dict()
