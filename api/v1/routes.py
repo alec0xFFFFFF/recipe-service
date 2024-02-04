@@ -74,17 +74,17 @@ def generate_recipe_from_image(ocr_text, md5):
     ingredients = agent.generate_response(
         f"You are an food recipe ingredients extraction agent. Your goal is to extract the ingredients from the "
         f"recipe provided by the user. You must use the exact wordage of the ingredient and measurement in the "
-        f"recipe, but return a bulletted list of all ingredients needed.",
+        f"recipe, but return a bulleted list of all ingredients needed. If the provided text is unintelligible return <none>.",
         ocr_text)
     steps = agent.generate_response(
         f"You are an food recipe steps extraction agent. Your goal is to extract the steps from the recipe provided "
         f"by the user. You must use the exact wordage of the steps in the recipe, but return a bulletted list of all "
-        f"steps.",
+        f"steps. If the provided text is unintelligible return <none>.",
         ocr_text)
     equipment = agent.generate_response(
         f"You are an food recipe equipment extraction agent. Your goal is to extract the equipment from the recipe "
         f"provided by the user. You must use the exact wordage of the equipment in the recipe, but return a bulletted "
-        f"list of all equipment.",
+        f"list of all equipment. If the provided text is unintelligible return <none>.",
         ocr_text)
     servings = parse_numeric_range_or_null(agent.generate_response(
         f"""You are an food recipe servings extraction agent. Your goal is to extract the servings from the recipe provided by the user. You must use the exact wordage of the servings in the recipe, if amount fo servings not specified than make an educated guess. You must only return a number range e.g. `2-4`
@@ -102,15 +102,15 @@ def generate_recipe_from_image(ocr_text, md5):
             [user]: How much minutes will it take to make this dish given the following information: The estimated total time for this Zesty Lemon Garlic Shrimp Pasta recipe is 45 minutes.
             [assistant]: 45
             """,
-        "How much minutes will it take to make this dish given the following information: " +
+        "How many minutes will it take to make this dish given the following information: " +
         ocr_text))
     description = agent.generate_response(
         f"You are a recipe description agent. Your goal is to return a very descriptive 15-30 word description of the "
         f"dish in the recipe. You must describe the type of food it is, taste, cuisine (e.g. italian), seasonality, "
-        f"ingredients, and ease.",
+        f"ingredients, and ease. If the provided text is unintelligible return <none>.",
         ocr_text)
     title = agent.generate_response(
-        f"You are a recipe titling agent. Your goal is to return a succinct yet descriptive title for a dish.",
+        f"You are a recipe titling agent. Your goal is to return a succinct yet descriptive title for a dish. The title must be accurate. If the provided text is unintelligible return <none>.",
         ocr_text)
     author = agent.generate_response("Extract the author or writer of the recipe. If there is none return <none>",
                                      ocr_text)
@@ -119,6 +119,9 @@ def generate_recipe_from_image(ocr_text, md5):
     ingredients_embeddings = agent.get_embedding(ingredients)
     print("all agents run")
     print(f"description: {description}")
+    if description == "<none>":
+        raise Exception
+    # todo if refusal fail loudly
     return Recipe(ingredients=ingredients,
                   steps=steps,
                   equipment=equipment,
