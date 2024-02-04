@@ -91,7 +91,7 @@ def ocr_and_md5_recipe_request_images(files):
 
         file_in_memory_2 = io.BytesIO(file_content)
         file.stream.seek(0)  # Reset stream pointer
-        ocr_text = extract.extractText(file_in_memory_2)
+        ocr_text = extract.extract_text(file_in_memory_2)
         all_ocr_text += ocr_text + ' '  # Concatenate text from each file
         md5s.append(md5_hash)
     concatenated_md5s = ''.join(md5s)
