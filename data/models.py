@@ -123,7 +123,7 @@ def after_ingredient_create(target, connection, **kw):
 
 def after_pantry_create_listener(target, connection, **kw):
     connection.execute(text(
-        "ALTER TABLE pantry_items_embeddings ALTER COLUMN embeddings TYPE vector(3072) USING embeddings::vector(3072);"))
+        "ALTER TABLE pantry_item_embeddings ALTER COLUMN embeddings TYPE vector(3072) USING embeddings::vector(3072);"))
 
 
 @event.listens_for(PantryItemEmbeddings.__table__, 'after_create')
