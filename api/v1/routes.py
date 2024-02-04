@@ -35,13 +35,19 @@ def submit_recipe():
 
     agent = baseAgent.Agent()
     ingredients = agent.generate_response(
-        f"You are an food recipe ingredients extraction agent. Your goal is to extract the ingredients from the recipe provided by the user. You must use the exact wordage of the ingredient and measurement in the recipe, but return a bulletted list of all ingredients needed.",
+        f"You are an food recipe ingredients extraction agent. Your goal is to extract the ingredients from the "
+        f"recipe provided by the user. You must use the exact wordage of the ingredient and measurement in the "
+        f"recipe, but return a bulletted list of all ingredients needed.",
         ocr_text)
     steps = agent.generate_response(
-        f"You are an food recipe steps extraction agent. Your goal is to extract the steps from the recipe provided by the user. You must use the exact wordage of the steps in the recipe, but return a bulletted list of all steps.",
+        f"You are an food recipe steps extraction agent. Your goal is to extract the steps from the recipe provided "
+        f"by the user. You must use the exact wordage of the steps in the recipe, but return a bulletted list of all "
+        f"steps.",
         ocr_text)
     equipment = agent.generate_response(
-        f"You are an food recipe equipment extraction agent. Your goal is to extract the equipment from the recipe provided by the user. You must use the exact wordage of the equipment in the recipe, but return a bulletted list of all equipment.",
+        f"You are an food recipe equipment extraction agent. Your goal is to extract the equipment from the recipe "
+        f"provided by the user. You must use the exact wordage of the equipment in the recipe, but return a bulletted "
+        f"list of all equipment.",
         ocr_text)
     servings = parse_numeric_range_or_null(agent.generate_response(
         f"""You are an food recipe servings extraction agent. Your goal is to extract the servings from the recipe provided by the user. You must use the exact wordage of the servings in the recipe, if amount fo servings not specified than make an educated guess. You must only return a number range e.g. `2-4`
@@ -62,7 +68,9 @@ def submit_recipe():
         "How much minutes will it take to make this dish given the following information: " +
         ocr_text))
     description = agent.generate_response(
-        f"You are a recipe description agent. Your goal is to return a very descriptive 15-30 word description of the dish in the recipe. You must describe the type of food it is, taste, cuisine (e.g. italian), seasonality, ingredients, and ease.",
+        f"You are a recipe description agent. Your goal is to return a very descriptive 15-30 word description of the "
+        f"dish in the recipe. You must describe the type of food it is, taste, cuisine (e.g. italian), seasonality, "
+        f"ingredients, and ease.",
         ocr_text)
     title = agent.generate_response(
         f"You are a recipe titling agent. Your goal is to return a succinct yet descriptive title for a dish.",
@@ -137,6 +145,24 @@ def generate_image():
     return jsonify({"image": url})
 
 
+@bp.route('/recipes', methods=['GET'])
+def get_recipes():
+    query_string = request.args.get('query', '')
+
+    if not query_string:
+        return jsonify({"error": "No query string provided"}), 400
+    raise NotImplementedError
+
+
+@bp.route('/recipes', methods=['DELETE'])
+def delete_recipes():
+    query_string = request.args.get('query', '')
+
+    if not query_string:
+        return jsonify({"error": "No query string provided"}), 400
+
+    raise NotImplementedError
+
 @bp.route('/', methods=['GET'])
 def search_for_recipe():
     agent = baseAgent.Agent()
@@ -163,7 +189,7 @@ def search_for_recipe():
 
     # Serialize the results
     closest_embeddings = [
-        {"author": row.author, "title": row.title, "description": row.description} for row in
+        {"id": row.id, "author": row.author, "title": row.title, "description": row.description} for row in
         rows]
 
     return jsonify({"dishes": closest_embeddings})

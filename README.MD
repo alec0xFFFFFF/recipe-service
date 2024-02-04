@@ -18,8 +18,14 @@ ROADMAP
 - generate photo combining meal
 - generate photo for shopping list
 
+- allow logging restaurant meals
+- track spend and calories
+- list of places and dishes you want to try
+- allow whisper and elevenlabs to read instructions and ask questions/modify recipe
+- store techniques
+- 
 
 Use Case:
-- everyday cooking/weekly mealplannning and shopping
+- everyday cooking/weekly meal plannning and shopping
 - thanksgiving
 - weekend trip/airbnb rentals create shopping list
