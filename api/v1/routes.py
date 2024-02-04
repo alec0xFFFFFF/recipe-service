@@ -1,5 +1,8 @@
 import hashlib
+import os
 
+import boto3
+from botocore.exceptions import NoCredentialsError
 from flask import Blueprint, request, jsonify
 from psycopg2.extras import NumericRange
 from sqlalchemy.exc import IntegrityError
@@ -48,12 +51,37 @@ def submit_recipe():
     return recipe.to_dict()
 
 
+def upload_to_s3(local_file, md5):
+    """
+    Upload a file to an S3 bucket
+
+    :param local_file: File to upload
+    :param md5: md5 for filename
+    :return: True if file was uploaded, else False
+    """
+    # Create an S3 client
+    s3 = boto3.client('s3', aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"), aws_secret_access_key=os.environ.get("AWS_SECRET_KEY_ID"), region_name="us-west-2")
+
+    try:
+        s3.upload_fileobj(local_file, os.environ.get("IMAGE_BUCKET_NAME"), f"{md5}.png")
+        print(f"Upload Successful: {local_file}")
+        return True
+    except FileNotFoundError:
+        print("The file was not found")
+        return False
+    except NoCredentialsError:
+        print("Credentials not available")
+        return False
+
+
 def ocr_and_md5_recipe_request_images(files):
     all_ocr_text = ''
     md5s = []
     for file in files:
         filename = secure_filename(file.filename)
         md5 = extract.calculate_md5(file.stream)
+        uploaded = upload_to_s3(filename, md5)
+
         print(f"req received for recipe file {filename}: {md5}")
 
         file.stream.seek(0)  # Reset stream pointer
