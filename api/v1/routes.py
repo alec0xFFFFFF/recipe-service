@@ -83,9 +83,8 @@ def ocr_and_md5_recipe_request_images(files):
         md5 = extract.calculate_md5(file.stream)
         print(f"req received for recipe file {filename}: {md5}")
         file.stream.seek(0)
-        copy_of_file_in_memory = io.BytesIO(file.getvalue())
-        copy_of_file_in_memory.seek(0)
-        uploaded = upload_to_s3(copy_of_file_in_memory, md5)
+        copy_of_file_in_memory = io.BytesIO(file.read())
+        uploaded = upload_to_s3(copy_of_file_in_memory.getvalue(), md5)
 
         file.stream.seek(0)  # Reset stream pointer
         ocr_text = extract.extractText(file)
