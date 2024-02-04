@@ -6,14 +6,14 @@ from datetime import datetime
 db = SQLAlchemy()
 
 
-class Record(db.Model):
+class Record:
     id = db.Column(db.Integer, primary_key=True)
 
     def to_dict(self):
         raise NotImplementedError
 
 
-class Recipe(Record):
+class Recipe(db.Model, Record):
     created_at = db.Column(DateTime, default=datetime.utcnow)
     ingredients = db.Column(db.Text, nullable=True)
     servings = db.Column(INT4RANGE, nullable=True)
@@ -43,7 +43,7 @@ class Recipe(Record):
         }
 
 
-class DescriptionEmbeddings(Record):
+class DescriptionEmbeddings(db.Model, Record):
     recipe_id = db.Column(db.Integer, ForeignKey('recipe.id'), unique=True)
     embeddings = db.Column(ARRAY(db.Float))  # 1536
 
@@ -55,7 +55,7 @@ class DescriptionEmbeddings(Record):
         }
 
 
-class IngredientsEmbeddings(Record):
+class IngredientsEmbeddings(db.Model, Record):
     recipe_id = db.Column(db.Integer, ForeignKey('recipe.id'), unique=True)
     embeddings = db.Column(ARRAY(db.Float))  # 1536
 
@@ -67,7 +67,7 @@ class IngredientsEmbeddings(Record):
         }
 
 
-class PantryItem(Record):
+class PantryItem(db.Model, Record):
     created_at = db.Column(DateTime, default=datetime.utcnow)
     expiration = db.Column(DateTime, nullable=True)
     name = db.Column(db.Text, nullable=True)
@@ -89,7 +89,7 @@ class PantryItem(Record):
         }
 
 
-class PantryItemEmbeddings(Record):
+class PantryItemEmbeddings(db.Model, Record):
     pantry_item_id = db.Column(db.Integer, ForeignKey('pantry_item.id'), unique=True)
     embeddings = db.Column(ARRAY(db.Float))  # 1536
 

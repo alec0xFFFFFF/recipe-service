@@ -300,5 +300,9 @@ def search_pantry():
 
 # todo recommend recipe based on my pantry
 
+# create shopping list from recipes i've added and my pantry
+
+# create account via google and apple
+
 def init_api_v1(app):
     app.register_blueprint(bp, url_prefix='/v1')
