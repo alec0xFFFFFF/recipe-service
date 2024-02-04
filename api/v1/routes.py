@@ -80,9 +80,9 @@ def ocr_and_md5_recipe_request_images(files):
     for file in files:
         filename = secure_filename(file.filename)
         md5 = extract.calculate_md5(file.stream)
-        uploaded = upload_to_s3(file, md5)
-
         print(f"req received for recipe file {filename}: {md5}")
+        file.stream.seek(0)
+        uploaded = upload_to_s3(file, md5)
 
         file.stream.seek(0)  # Reset stream pointer
         ocr_text = extract.extractText(file)
