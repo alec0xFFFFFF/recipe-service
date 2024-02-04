@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from psycopg2.extras import NumericRange
+from sqlalchemy.exc import IntegrityError
 
 import extract
 from agents import baseAgent
@@ -33,6 +34,20 @@ def submit_recipe():
     if result:
         return jsonify(result.to_dict())
 
+    recipe, description_embeddings, ingredients_embeddings = generate_recipe_from_image(ocr_text, md5)
+    db.session.add(recipe)
+    db.session.commit()
+    recipe_id = recipe.id
+    description_embeddings_record = DescriptionEmbeddings(recipe_id=recipe_id, embeddings=description_embeddings)
+    ingredients_embeddings_record = IngredientsEmbeddings(recipe_id=recipe_id, embeddings=ingredients_embeddings)
+    db.session.add(description_embeddings_record)
+    db.session.add(ingredients_embeddings_record)
+    db.session.commit()
+
+    return recipe.to_dict()
+
+
+def generate_recipe_from_image(ocr_text, md5):
     agent = baseAgent.Agent()
     ingredients = agent.generate_response(
         f"You are an food recipe ingredients extraction agent. Your goal is to extract the ingredients from the "
@@ -51,20 +66,20 @@ def submit_recipe():
         ocr_text)
     servings = parse_numeric_range_or_null(agent.generate_response(
         f"""You are an food recipe servings extraction agent. Your goal is to extract the servings from the recipe provided by the user. You must use the exact wordage of the servings in the recipe, if amount fo servings not specified than make an educated guess. You must only return a number range e.g. `2-4`
-        Example:
-        [user]: How many servings is this dish given the following information: This recipe serves a family of 2-4, but can be stretched to feed more by scaling.
-        [assistant]: 2-4
-        """,
+            Example:
+            [user]: How many servings is this dish given the following information: This recipe serves a family of 2-4, but can be stretched to feed more by scaling.
+            [assistant]: 2-4
+            """,
         "How many servings is this dish given the following information: " +
         ocr_text))
     time = parse_int_or_null(agent.generate_response(
         f"""You are a recipe time extraction and estimation agent. Your goal is to return the total number of minutes it will take to complete the recipe. You must use the exact minutes estimate if provided, but if none is provided do your best to accurately estimate the time it will take. You must only return the number of minutes e.g. `35`
-        Example:
-        [user]: How much minutes will it take to make this dish given the following information: This recipe takes 15 minutes of prep time and 20 minutes of cooking time.
-        [assistant]: 35
-        [user]: How much minutes will it take to make this dish given the following information: The estimated total time for this Zesty Lemon Garlic Shrimp Pasta recipe is 45 minutes.
-        [assistant]: 45
-        """,
+            Example:
+            [user]: How much minutes will it take to make this dish given the following information: This recipe takes 15 minutes of prep time and 20 minutes of cooking time.
+            [assistant]: 35
+            [user]: How much minutes will it take to make this dish given the following information: The estimated total time for this Zesty Lemon Garlic Shrimp Pasta recipe is 45 minutes.
+            [assistant]: 45
+            """,
         "How much minutes will it take to make this dish given the following information: " +
         ocr_text))
     description = agent.generate_response(
@@ -81,7 +96,7 @@ def submit_recipe():
     description_embeddings = agent.get_embedding(description)
     ingredients_embeddings = agent.get_embedding(ingredients)
 
-    recipe = Recipe(ingredients=ingredients,
+    return Recipe(ingredients=ingredients,
                     steps=steps,
                     equipment=equipment,
                     time=time,
@@ -90,18 +105,7 @@ def submit_recipe():
                     title=title,
                     author=author,
                     submission_md5=md5
-                    )
-    db.session.add(recipe)
-    db.session.commit()
-    recipe_id = recipe.id
-    description_embeddings = DescriptionEmbeddings(recipe_id=recipe_id, embeddings=description_embeddings)
-    ingredients_embeddings = IngredientsEmbeddings(recipe_id=recipe_id, embeddings=ingredients_embeddings)
-    db.session.add(description_embeddings)
-    db.session.add(ingredients_embeddings)
-    db.session.commit()
-
-    return recipe.to_dict()
-
+                    ), description_embeddings, ingredients_embeddings
 
 def parse_int_or_null(input_string):
     try:
@@ -145,23 +149,61 @@ def generate_image():
     return jsonify({"image": url})
 
 
-@bp.route('/recipes', methods=['GET'])
-def get_recipes():
-    query_string = request.args.get('query', '')
-
-    if not query_string:
-        return jsonify({"error": "No query string provided"}), 400
+@bp.route('/recipes/<str:recipe_id>', methods=['GET'])
+def get_recipes(recipe_id):
+    # delete description and ingredient embeddings
+    try:
+        recipe = Recipe.query.filter_by(id=recipe_id).first()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': 'Deletion failed due to integrity error'}), 500
     raise NotImplementedError
 
 
-@bp.route('/recipes', methods=['DELETE'])
-def delete_recipes():
-    query_string = request.args.get('query', '')
+@bp.route('/recipes/<str:recipe_id>', methods=['DELETE'])
+def delete_recipe(recipe_id):
+    try:
+        recipe = Recipe.query.filter_by(id=recipe_id).first()
+        if recipe:
+            db.session.delete(recipe)
+            db.session.commit()
+            return jsonify({'message': 'Parent and its children deleted successfully'}), 200
+        else:
+            return jsonify({'message': 'Parent not found'}), 404
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': 'Deletion failed due to integrity error'}), 500
 
-    if not query_string:
-        return jsonify({"error": "No query string provided"}), 400
 
-    raise NotImplementedError
+@bp.route('/recipes/<str:recipe_id>', methods=['PUT'])
+def modify_recipe(recipe_id):
+    if 'recipe' not in request.files:
+        return 'No file part'
+
+    file = request.files['recipe']
+
+    if file.filename == '':
+        return 'No selected file'
+
+    md5 = extract.calculate_md5(file.stream)
+    print(f"req received for recipe file: {md5}")
+    ocr_text = extract.extractText(file)
+    recipe, description_embeddings, ingredients_embeddings = generate_recipe_from_image(ocr_text, md5)
+    recipe.recipe_id = recipe_id
+    try:
+        description_embeddings_record = DescriptionEmbeddings.query.filter_by(recipe_id=recipe_id).first()
+        description_embeddings_record.embeddings = description_embeddings
+        ingredients_embeddings_record = IngredientsEmbeddings.query.filter_by(recipe_id=recipe_id).first()
+        ingredients_embeddings_record.embeddings = ingredients_embeddings
+        db.session.add(description_embeddings_record)
+        db.session.add(ingredients_embeddings_record)
+        db.session.commit()
+        return jsonify(recipe)
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': str(e)}), 500
+
+# todo add ingredient to pantry
 
 @bp.route('/', methods=['GET'])
 def search_for_recipe():
