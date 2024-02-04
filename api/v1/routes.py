@@ -80,16 +80,20 @@ def ocr_and_md5_recipe_request_images(files):
     md5s = []
     for file in files:
         filename = secure_filename(file.filename)
-        md5 = extract.calculate_md5(file.stream)
-        print(f"req received for recipe file {filename}: {md5}")
         file.stream.seek(0)
-        copy_of_file_in_memory = io.BytesIO(file.read())
-        uploaded = upload_to_s3(copy_of_file_in_memory.getvalue(), md5)
+        file_content = file.read()
+        md5_hash = extract.calculate_md5(io.BytesIO(file_content))
+        print(f"req received for recipe file {filename}: {md5_hash}")
+        # Reset the stream position after MD5 calculation
+        file_in_memory = io.BytesIO(file_content)
+        file.stream.seek(0)
+        uploaded = upload_to_s3(file_in_memory, md5_hash)
 
+        file_in_memory_2 = io.BytesIO(file_content)
         file.stream.seek(0)  # Reset stream pointer
-        ocr_text = extract.extractText(file)
+        ocr_text = extract.extractText(file_in_memory_2)
         all_ocr_text += ocr_text + ' '  # Concatenate text from each file
-        md5s.append(md5)
+        md5s.append(md5_hash)
     concatenated_md5s = ''.join(md5s)
     print("finished ocr'ing")
 
