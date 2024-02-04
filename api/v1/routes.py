@@ -1,4 +1,5 @@
 import hashlib
+import io
 import os
 
 import boto3
@@ -81,10 +82,13 @@ def ocr_and_md5_recipe_request_images(files):
         filename = secure_filename(file.filename)
         md5 = extract.calculate_md5(file.stream)
         print(f"req received for recipe file {filename}: {md5}")
+        file.stream.seek(0)
+        copy_of_file_in_memory = io.BytesIO(file.getvalue())
+        copy_of_file_in_memory.seek(0)
+        uploaded = upload_to_s3(copy_of_file_in_memory, md5)
+
         file.stream.seek(0)  # Reset stream pointer
         ocr_text = extract.extractText(file)
-        file.stream.seek(0)
-        uploaded = upload_to_s3(file, md5)
         all_ocr_text += ocr_text + ' '  # Concatenate text from each file
         md5s.append(md5)
     concatenated_md5s = ''.join(md5s)
