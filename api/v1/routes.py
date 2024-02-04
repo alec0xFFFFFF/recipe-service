@@ -1,3 +1,5 @@
+import hashlib
+
 from flask import Blueprint, request, jsonify
 from psycopg2.extras import NumericRange
 from sqlalchemy.exc import IntegrityError
@@ -5,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 import extract
 from agents import baseAgent
 from sqlalchemy import text
+from werkzeug.utils import secure_filename
 from data.models import db, Recipe, DescriptionEmbeddings, IngredientsEmbeddings
 
 bp = Blueprint('bp', __name__)
@@ -12,22 +15,15 @@ bp = Blueprint('bp', __name__)
 
 @bp.route('/', methods=['POST'])
 def submit_recipe():
-    # input of an image
-    # three agents to split up
-    # store everything
-    # return id
-    # todo handle multiple files and concatenate together
+    print(f"insert req received for recipe file")
     if 'recipe' not in request.files:
-        return 'No file part'
+        return 'No file part', 400
 
-    file = request.files['recipe']
+    files = request.files.getlist('recipe')
 
-    if file.filename == '':
-        return 'No selected file'
-
-    md5 = extract.calculate_md5(file.stream)
-    print(f"req received for recipe file: {md5}")
-    ocr_text = extract.extractText(file)
+    if not files or any(file.filename == '' for file in files):
+        return 'No selected file', 400
+    ocr_text, md5 = ocr_and_md5_recipe_request_images(files)
 
     # don't double process same image
     result = db.session.query(Recipe).filter(Recipe.submission_md5 == md5).first()
@@ -45,6 +41,25 @@ def submit_recipe():
     db.session.commit()
 
     return recipe.to_dict()
+
+
+def ocr_and_md5_recipe_request_images(files):
+    all_ocr_text = ''
+    md5s = []
+    for file in files:
+        filename = secure_filename(file.filename)
+        md5 = extract.calculate_md5(file.stream)
+        print(f"req received for recipe file {filename}: {md5}")
+
+        file.stream.seek(0)  # Reset stream pointer
+        ocr_text = extract.extractText(file)
+        all_ocr_text += ocr_text + ' '  # Concatenate text from each file
+        md5s.append(md5)
+    concatenated_md5s = ''.join(md5s)
+
+    # Compute MD5 of the concatenated string of individual hashes
+    combined_md5 = hashlib.md5(concatenated_md5s.encode()).hexdigest()
+    return all_ocr_text, combined_md5
 
 
 def generate_recipe_from_image(ocr_text, md5):
@@ -97,15 +112,16 @@ def generate_recipe_from_image(ocr_text, md5):
     ingredients_embeddings = agent.get_embedding(ingredients)
 
     return Recipe(ingredients=ingredients,
-                    steps=steps,
-                    equipment=equipment,
-                    time=time,
-                    description=description,
-                    servings=servings,
-                    title=title,
-                    author=author,
-                    submission_md5=md5
-                    ), description_embeddings, ingredients_embeddings
+                  steps=steps,
+                  equipment=equipment,
+                  time=time,
+                  description=description,
+                  servings=servings,
+                  title=title,
+                  author=author,
+                  submission_md5=md5
+                  ), description_embeddings, ingredients_embeddings
+
 
 def parse_int_or_null(input_string):
     try:
@@ -149,7 +165,7 @@ def generate_image():
     return jsonify({"image": url})
 
 
-@bp.route('/recipes/<str:recipe_id>', methods=['GET'])
+@bp.route('/recipes/<int:recipe_id>', methods=['GET'])
 def get_recipes(recipe_id):
     # delete description and ingredient embeddings
     try:
@@ -160,7 +176,7 @@ def get_recipes(recipe_id):
     raise NotImplementedError
 
 
-@bp.route('/recipes/<str:recipe_id>', methods=['DELETE'])
+@bp.route('/recipes/<int:recipe_id>', methods=['DELETE'])
 def delete_recipe(recipe_id):
     try:
         recipe = Recipe.query.filter_by(id=recipe_id).first()
@@ -175,19 +191,17 @@ def delete_recipe(recipe_id):
         return jsonify({'message': 'Deletion failed due to integrity error'}), 500
 
 
-@bp.route('/recipes/<str:recipe_id>', methods=['PUT'])
+@bp.route('/recipes/<int:recipe_id>', methods=['PUT'])
 def modify_recipe(recipe_id):
+    print(f"update req received for recipe file(s)")
     if 'recipe' not in request.files:
-        return 'No file part'
+        return 'No file part', 400
 
-    file = request.files['recipe']
+    files = request.files.getlist('recipe')
 
-    if file.filename == '':
-        return 'No selected file'
-
-    md5 = extract.calculate_md5(file.stream)
-    print(f"req received for recipe file: {md5}")
-    ocr_text = extract.extractText(file)
+    if not files or any(file.filename == '' for file in files):
+        return 'No selected file', 400
+    ocr_text, md5 = ocr_and_md5_recipe_request_images(files)
     recipe, description_embeddings, ingredients_embeddings = generate_recipe_from_image(ocr_text, md5)
     recipe.recipe_id = recipe_id
     try:
@@ -203,7 +217,6 @@ def modify_recipe(recipe_id):
         db.session.rollback()
         return jsonify({'message': str(e)}), 500
 
-# todo add ingredient to pantry
 
 @bp.route('/', methods=['GET'])
 def search_for_recipe():
@@ -236,6 +249,56 @@ def search_for_recipe():
 
     return jsonify({"dishes": closest_embeddings})
 
+
+# todo add to pantry
+@bp.route('/pantry', methods=['POST'])
+def add_item_to_pantry():
+    # todo take in an optional image and payload with info
+    # want expiration
+    # want description
+    raise NotImplementedError
+
+
+@bp.route('/pantry', methods=['PUT'])
+def modify_pantry_item():
+    # can change
+    # delete from pantry
+    raise NotImplementedError
+
+@bp.route('/pantry', methods=['GET'])
+def search_pantry():
+    agent = baseAgent.Agent()
+    query_string = request.args.get('query', '')
+
+    if not query_string:
+        return jsonify({"error": "No query string provided"}), 400
+
+    embeddings = agent.get_embedding(query_string)
+    sql_query = text("""
+        SELECT * FROM pantry_items
+        WHERE id IN (
+        SELECT pantry_item_id FROM pantry_item_embeddings
+        ORDER BY embeddings <-> CAST(:embeddings AS vector)
+        LIMIT 5) AND deleted = FALSE AND NOW() < expiration 
+    """)
+
+    query_params = {"embeddings": embeddings}
+
+    result = db.session.execute(sql_query, query_params)
+
+    # Retrieve the rows from the result
+    rows = result.fetchall()
+
+    # Serialize the results
+    closest_embeddings = [
+        {"id": row.id, "expiration": row.expiration, "name": row.name, "description": row.description,
+         "image": row.image} for row in
+        rows]
+
+    return jsonify(closest_embeddings)
+
+
+# todo recommend recipe based on my pantry
 
 def init_api_v1(app):
     app.register_blueprint(bp, url_prefix='/v1')

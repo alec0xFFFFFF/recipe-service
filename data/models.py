@@ -6,8 +6,14 @@ from datetime import datetime
 db = SQLAlchemy()
 
 
-class Recipe(db.Model):
+class Record(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+
+    def to_dict(self):
+        raise NotImplementedError
+
+
+class Recipe(Record):
     created_at = db.Column(DateTime, default=datetime.utcnow)
     ingredients = db.Column(db.Text, nullable=True)
     servings = db.Column(INT4RANGE, nullable=True)
@@ -37,8 +43,7 @@ class Recipe(db.Model):
         }
 
 
-class DescriptionEmbeddings(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+class DescriptionEmbeddings(Record):
     recipe_id = db.Column(db.Integer, ForeignKey('recipe.id'), unique=True)
     embeddings = db.Column(ARRAY(db.Float))  # 1536
 
@@ -50,8 +55,7 @@ class DescriptionEmbeddings(db.Model):
         }
 
 
-class IngredientsEmbeddings(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+class IngredientsEmbeddings(Record):
     recipe_id = db.Column(db.Integer, ForeignKey('recipe.id'), unique=True)
     embeddings = db.Column(ARRAY(db.Float))  # 1536
 
@@ -60,6 +64,40 @@ class IngredientsEmbeddings(db.Model):
             'id': self.id,
             'embeddings': self.embeddings,
             'recipe_id': self.recipe_id,
+        }
+
+
+class PantryItem(Record):
+    created_at = db.Column(DateTime, default=datetime.utcnow)
+    expiration = db.Column(DateTime, nullable=True)
+    name = db.Column(db.Text, nullable=True)
+    image = db.Column(db.Text, nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    user_id = db.Column(db.Integer, nullable=True)
+    deleted = db.Column(Boolean, nullable=False, default=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'description': self.description,
+            'name': self.name,
+            'expiration': self.expiration,
+            'image': self.image,
+            'deleted': self.deleted,
+            'created_at': self.created_at,
+        }
+
+
+class PantryItemEmbeddings(Record):
+    pantry_item_id = db.Column(db.Integer, ForeignKey('pantry_item.id'), unique=True)
+    embeddings = db.Column(ARRAY(db.Float))  # 1536
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'embeddings': self.embeddings,
+            'pantry_item_id': self.pantry_item_id,
         }
 
 
@@ -81,3 +119,13 @@ def after_ingredient_create_listener(target, connection, **kw):
 @event.listens_for(IngredientsEmbeddings.__table__, 'after_create')
 def after_ingredient_create(target, connection, **kw):
     after_ingredient_create_listener(target, connection, **kw)
+
+
+def after_pantry_create_listener(target, connection, **kw):
+    connection.execute(text(
+        "ALTER TABLE pantry_items_embeddings ALTER COLUMN embeddings TYPE vector(3072) USING embeddings::vector(3072);"))
+
+
+@event.listens_for(PantryItemEmbeddings.__table__, 'after_create')
+def after_pantry_create(target, connection, **kw):
+    after_pantry_create_listener(target, connection, **kw)
