@@ -246,16 +246,23 @@ def search_for_recipe():
     closest_embeddings = [
         {"id": row.id, "author": row.author, "title": row.title, "description": row.description} for row in
         rows]
-
+    print(f"found {len(closest_embeddings)} recipes")
     return jsonify({"dishes": closest_embeddings})
 
 
-# todo add to pantry
 @bp.route('/pantry', methods=['POST'])
 def add_item_to_pantry():
     # todo take in an optional image and payload with info
-    # want expiration
-    # want description
+    # expiration
+    # description
+    # should have an amount and unit
+    raise NotImplementedError
+
+
+@bp.route('/pantry', methods=['PUT'])
+def delete_pantry_item():
+    # can change
+    # delete from pantry
     raise NotImplementedError
 
 
@@ -264,6 +271,7 @@ def modify_pantry_item():
     # can change
     # delete from pantry
     raise NotImplementedError
+
 
 @bp.route('/pantry', methods=['GET'])
 def search_pantry():
