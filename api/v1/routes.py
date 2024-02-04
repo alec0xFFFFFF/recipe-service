@@ -24,11 +24,13 @@ def submit_recipe():
     if not files or any(file.filename == '' for file in files):
         return 'No selected file', 400
     ocr_text, md5 = ocr_and_md5_recipe_request_images(files)
-
+    print(f"md5: {md5}")
     # don't double process same image
     result = db.session.query(Recipe).filter(Recipe.submission_md5 == md5).first()
     if result:
         return jsonify(result.to_dict())
+
+    print("passed md5 check")
 
     recipe, description_embeddings, ingredients_embeddings = generate_recipe_from_image(ocr_text, md5)
     db.session.add(recipe)
@@ -56,6 +58,7 @@ def ocr_and_md5_recipe_request_images(files):
         all_ocr_text += ocr_text + ' '  # Concatenate text from each file
         md5s.append(md5)
     concatenated_md5s = ''.join(md5s)
+    print("finished ocr'ing")
 
     # Compute MD5 of the concatenated string of individual hashes
     combined_md5 = hashlib.md5(concatenated_md5s.encode()).hexdigest()
