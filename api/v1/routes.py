@@ -116,7 +116,7 @@ def generate_recipe_from_image(ocr_text, md5):
 
     description_embeddings = agent.get_embedding(description)
     ingredients_embeddings = agent.get_embedding(ingredients)
-
+    print("all agents run")
     return Recipe(ingredients=ingredients,
                   steps=steps,
                   equipment=equipment,
