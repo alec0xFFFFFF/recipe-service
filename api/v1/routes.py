@@ -35,13 +35,16 @@ def submit_recipe():
     recipe, description_embeddings, ingredients_embeddings = generate_recipe_from_image(ocr_text, md5)
     db.session.add(recipe)
     db.session.commit()
+    print("successfully added recipe")
     recipe_id = recipe.id
     description_embeddings_record = DescriptionEmbeddings(recipe_id=recipe_id, embeddings=description_embeddings)
     ingredients_embeddings_record = IngredientsEmbeddings(recipe_id=recipe_id, embeddings=ingredients_embeddings)
     db.session.add(description_embeddings_record)
+    print("added description embeddings")
     db.session.add(ingredients_embeddings_record)
+    print("added ingredients embeddings")
     db.session.commit()
-
+    print("successfully added recipe with embeddings")
     return recipe.to_dict()
 
 
