@@ -273,11 +273,10 @@ def search_for_recipe():
 
     embeddings = agent.get_embedding(query_string)
     sql_query = text("""
-        SELECT * FROM recipe
-        WHERE id IN (
-        SELECT recipe_id FROM description_embeddings
-        ORDER BY embeddings <-> CAST(:embeddings AS vector)
-        LIMIT 5)
+        SELECT recipe.* FROM recipe
+        JOIN description_embeddings ON recipe.id = description_embeddings.recipe_id
+        ORDER BY description_embeddings.embeddings <-> CAST(:embeddings AS vector)
+        LIMIT 5;
     """)
 
     query_params = {"embeddings": embeddings}
