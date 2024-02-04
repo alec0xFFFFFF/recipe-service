@@ -70,6 +70,7 @@ def ocr_and_md5_recipe_request_images(files):
 
 def generate_recipe_from_image(ocr_text, md5):
     agent = baseAgent.Agent()
+    print(f"ocr text: {ocr_text}")
     ingredients = agent.generate_response(
         f"You are an food recipe ingredients extraction agent. Your goal is to extract the ingredients from the "
         f"recipe provided by the user. You must use the exact wordage of the ingredient and measurement in the "
@@ -117,6 +118,7 @@ def generate_recipe_from_image(ocr_text, md5):
     description_embeddings = agent.get_embedding(description)
     ingredients_embeddings = agent.get_embedding(ingredients)
     print("all agents run")
+    print(f"description: {description}")
     return Recipe(ingredients=ingredients,
                   steps=steps,
                   equipment=equipment,
