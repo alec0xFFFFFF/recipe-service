@@ -226,11 +226,18 @@ def delete_recipe(recipe_id):
     try:
         print(f"deleting recipe: {recipe_id}")
         recipe = db.session.query(Recipe).filter_by(id=recipe_id).first()
-        description_embeddings_record = DescriptionEmbeddings.query.filter(DescriptionEmbeddings.recipe_id == recipe_id).first()
-        ingredients_embeddings_record = IngredientsEmbeddings.query.filter(IngredientsEmbeddings.recipe_id == recipe_id).first()
         if recipe:
-            db.session.delete(description_embeddings_record)
-            db.session.delete(ingredients_embeddings_record)
+            sql_query = text("""
+                DELETE * FROM description_embeddings WHERE recipe_id = :recipe_id;
+            """)
+
+            query_params = {"recipe_id": recipe_id}
+
+            result = db.session.execute(sql_query, query_params)
+            sql_query = text("""
+                            DELETE * FROM ingredients_embeddings WHERE recipe_id = :recipe_id;
+                        """)
+            result = db.session.execute(sql_query, query_params)
             db.session.commit()
             db.session.delete(recipe)
             db.session.commit()
