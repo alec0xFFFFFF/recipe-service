@@ -226,12 +226,12 @@ def delete_recipe(recipe_id):
     try:
         print(f"deleting recipe: {recipe_id}")
         recipe = db.session.query(Recipe).filter_by(id=recipe_id).first()
-        description_embeddings_record = db.session.query(DescriptionEmbeddings).filter_by(recipe_id=recipe_id).first()
-        ingredients_embeddings_record = db.session.query(IngredientsEmbeddings).filter_by(recipe_id=recipe_id).first()
+        # description_embeddings_record = db.session.query(DescriptionEmbeddings).filter_by(recipe_id=recipe_id).first()
+        # ingredients_embeddings_record = db.session.query(IngredientsEmbeddings).filter_by(recipe_id=recipe_id).first()
         if recipe:
-            db.session.delete(description_embeddings_record)
-            db.session.delete(ingredients_embeddings_record)
-            db.session.commit()
+            # db.session.delete(description_embeddings_record)
+            # db.session.delete(ingredients_embeddings_record)
+            # db.session.commit()
             db.session.delete(recipe)
             db.session.commit()
             return jsonify({'message': 'Parent and its children deleted successfully'}), 200
