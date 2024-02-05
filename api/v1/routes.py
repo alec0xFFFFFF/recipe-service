@@ -228,14 +228,14 @@ def delete_recipe(recipe_id):
         recipe = db.session.query(Recipe).filter_by(id=recipe_id).first()
         if recipe:
             sql_query = text("""
-                DELETE * FROM description_embeddings WHERE recipe_id = :recipe_id;
+                DELETE FROM description_embeddings WHERE recipe_id = :recipe_id;
             """)
 
             query_params = {"recipe_id": recipe_id}
 
             result = db.session.execute(sql_query, query_params)
             sql_query = text("""
-                            DELETE * FROM ingredients_embeddings WHERE recipe_id = :recipe_id;
+                            DELETE FROM ingredients_embeddings WHERE recipe_id = :recipe_id;
                         """)
             result = db.session.execute(sql_query, query_params)
             db.session.commit()
