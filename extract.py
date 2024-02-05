@@ -6,7 +6,7 @@ import numpy as np
 
 def extract_text(image_name):
     # Read the image
-    image = cv2.imread('path_to_image.jpg')
+    image = cv2.imread(image_name)
 
     # Correct skew
     corrected_image = correct_skew(image)
