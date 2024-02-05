@@ -215,10 +215,10 @@ def get_recipes(recipe_id):
     # delete description and ingredient embeddings
     try:
         recipe = Recipe.query.filter_by(id=recipe_id).first()
+        return jsonify(recipe.to_dict())
     except IntegrityError:
         db.session.rollback()
         return jsonify({'message': 'Deletion failed due to integrity error'}), 500
-    raise NotImplementedError
 
 
 @bp.route('/recipes/<int:recipe_id>', methods=['DELETE'])
