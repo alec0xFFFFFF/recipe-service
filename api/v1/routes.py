@@ -16,6 +16,8 @@ from data.models import db, Recipe, DescriptionEmbeddings, IngredientsEmbeddings
 
 bp = Blueprint('bp', __name__)
 
+def is_only_whitespace(s):
+    return s.isspace()
 
 @bp.route('/', methods=['POST'])
 def submit_recipe():
@@ -30,7 +32,7 @@ def submit_recipe():
     if not files or any(file.filename == '' for file in files):
         return 'No selected file', 400
     ocr_text, md5 = ocr_and_md5_recipe_request_images(files)
-    if ocr_text_from_request != '':
+    if not is_only_whitespace(ocr_text_from_request):
         print(f"------ocr_text from req:")
         print(ocr_text_from_request)
         ocr_text = ocr_text_from_request
