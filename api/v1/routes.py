@@ -25,9 +25,13 @@ def submit_recipe():
 
     files = request.files.getlist('recipe')
 
+    ocr_text_from_request = request.form.get('ocr_text', '')
+
     if not files or any(file.filename == '' for file in files):
         return 'No selected file', 400
     ocr_text, md5 = ocr_and_md5_recipe_request_images(files)
+    if ocr_text_from_request != '':
+        ocr_text = ocr_text_from_request
     print(f"md5: {md5}")
     # don't double process same image
     result = db.session.query(Recipe).filter(Recipe.submission_md5 == md5).first()
