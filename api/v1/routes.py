@@ -31,6 +31,8 @@ def submit_recipe():
         return 'No selected file', 400
     ocr_text, md5 = ocr_and_md5_recipe_request_images(files)
     if ocr_text_from_request != '':
+        print(f"------ocr_text from req:")
+        print(ocr_text_from_request)
         ocr_text = ocr_text_from_request
     print(f"md5: {md5}")
     # don't double process same image
