@@ -4,9 +4,15 @@ import hashlib
 import numpy as np
 
 
-def extract_text(image_name):
+def extract_text(file):
     # Read the image
-    image = cv2.imread(image_name)
+    image_bytes = file.read()
+
+    # Convert the bytes to a numpy array
+    image_array = np.frombuffer(image_bytes, dtype=np.uint8)
+
+    # Decode the image from the array
+    image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
 
     # Correct skew
     corrected_image = correct_skew(image)
