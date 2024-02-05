@@ -225,9 +225,9 @@ def get_recipes(recipe_id):
 def delete_recipe(recipe_id):
     try:
         print(f"deleting recipe: {recipe_id}")
-        recipe = Recipe.query.filter_by(id=recipe_id).first()
-        description_embeddings_record = DescriptionEmbeddings.query.filter_by(recipe_id=recipe_id).first()
-        ingredients_embeddings_record = IngredientsEmbeddings.query.filter_by(recipe_id=recipe_id).first()
+        recipe = db.session.query(Recipe).filter_by(id=recipe_id).first()
+        description_embeddings_record = db.session.query(DescriptionEmbeddings).filter_by(recipe_id=recipe_id).first()
+        ingredients_embeddings_record = db.session.query(IngredientsEmbeddings).filter_by(recipe_id=recipe_id).first()
         if recipe:
             db.session.delete(description_embeddings_record)
             db.session.delete(ingredients_embeddings_record)
