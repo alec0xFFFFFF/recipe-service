@@ -224,15 +224,23 @@ def get_recipes(recipe_id):
 @bp.route('/recipes/<int:recipe_id>', methods=['DELETE'])
 def delete_recipe(recipe_id):
     try:
+        print(f"deleting recipe: {recipe_id}")
         recipe = Recipe.query.filter_by(id=recipe_id).first()
+        description_embeddings_record = DescriptionEmbeddings.query.filter_by(recipe_id=recipe_id).first()
+        ingredients_embeddings_record = IngredientsEmbeddings.query.filter_by(recipe_id=recipe_id).first()
         if recipe:
+            db.session.delete(description_embeddings_record)
+            db.session.delete(ingredients_embeddings_record)
+            db.session.commit()
             db.session.delete(recipe)
             db.session.commit()
             return jsonify({'message': 'Parent and its children deleted successfully'}), 200
         else:
+            print(f"error not found when deleting recipe: {recipe_id}")
             return jsonify({'message': 'Parent not found'}), 404
     except IntegrityError:
         db.session.rollback()
+        print(f"error deleting recipe: {recipe_id}")
         return jsonify({'message': 'Deletion failed due to integrity error'}), 500
 
 
@@ -290,7 +298,6 @@ def search_for_recipe():
     closest_embeddings = [
         {"id": row.id, "author": row.author, "title": row.title, "description": row.description} for row in
         rows]
-    print(f"found {len(closest_embeddings)} recipes")
     return jsonify({"dishes": closest_embeddings})
 
 
