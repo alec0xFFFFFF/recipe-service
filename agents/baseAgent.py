@@ -29,7 +29,7 @@ class Agent:
     def get_transcript(self, audio_stream):
         transcript = client.audio.transcriptions.create(
             model="whisper-1",
-            file=audio_stream.read(),
+            file=audio_stream,
             response_format="text"
         )
         return transcript
