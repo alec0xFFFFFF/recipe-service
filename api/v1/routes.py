@@ -271,10 +271,10 @@ def generate_image():
 
 
 @bp.route('/recipes/<int:recipe_id>', methods=['GET'])
-def get_recipes(recipe_id):
-    # delete description and ingredient embeddings
+def get_recipe(recipe_id):
     try:
         recipe = Recipe.query.filter_by(id=recipe_id).first()
+        print(f"found recipe {recipe}")
         return recipe.to_dict()
     except IntegrityError:
         db.session.rollback()
