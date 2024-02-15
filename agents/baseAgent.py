@@ -67,12 +67,7 @@ class Agent:
         }
 
         response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-        print(response.json())
-        print(response.json()['choices'])
-        print(response.json()['choices'][0])
-        print(response.json()['choices'][0]['message'])
-        print(response.json()['choices'][0]['message']['content'])
-        return response.json().choices[0].message.content
+        return response.json()['choices'][0]['message']['content']
 
     def get_embedding(self, text, model="text-embedding-3-large"):
         text = text.replace("\n", " ")
