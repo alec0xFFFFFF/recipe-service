@@ -119,7 +119,7 @@ def upload_to_s3(local_file, md5):
 
     try:
         s3.upload_fileobj(local_file, os.environ.get("IMAGE_BUCKET_NAME"), f"{md5}.png")
-        print(f"Upload Successful: {local_file}")
+        print(f"Upload Successful: {md5}.png")
         return True
     except FileNotFoundError:
         print("The file was not found")
@@ -152,7 +152,8 @@ def ocr_and_md5_recipe_request_images(files):
         file.stream.seek(0)  # Reset stream pointer
         # ocr_text = extract.extract_text(file_in_memory_2)
         print(f"ocr: {ocr_text}")
-        all_ocr_text += ocr_text + ' '  # Concatenate text from each file
+        return ocr_text, md5_hash
+        all_ocr_text += ocr_text  # Concatenate text from each file
         md5s.append(md5_hash)
     concatenated_md5s = ''.join(md5s)
     print(f"finished ocr'ing: {all_ocr_text}")
