@@ -24,7 +24,7 @@ class Recipe(db.Model):
         return {
             'id': self.id,
             "ingredients": self.ingredients,
-            "servings": {"start": self.servings.lower, "end": self.servings.upper},
+            "servings": {"start": self.servings.lower, "end": self.servings.upper} if self.servings else None,
             "submission_md5": self.submission_md5,
             "steps": self.steps,
             "equipment": self.equipment,
