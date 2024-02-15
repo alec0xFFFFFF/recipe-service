@@ -3,8 +3,15 @@ import os
 
 import requests
 from openai import OpenAI
+from elevenlabs.client import ElevenLabs
+from elevenlabs import generate, stream
+
+eleven = ElevenLabs(
+  api_key=os.environ.get('ELEVEN_LABS_KEY')
+)
 
 client = OpenAI()
+
 
 
 class Agent:
@@ -81,3 +88,11 @@ class Agent:
             size="1024x1024"
         )
         return response.data[0].url
+
+    def text_to_speech(self, text):
+        audio = generate(
+            text=text,
+            voice="Bella",
+            model="eleven_multilingual_v2"
+        )
+        return audio

@@ -9,7 +9,6 @@ from botocore.exceptions import NoCredentialsError
 from flask import Blueprint, request, jsonify, Response
 from psycopg2.extras import NumericRange
 from sqlalchemy.exc import IntegrityError
-# from elevenlabs import generate, stream
 
 import extract
 from agents import baseAgent
@@ -25,19 +24,6 @@ bp = Blueprint('bp', __name__)
 def is_only_whitespace(s):
     return s.isspace()
 
-
-# Eleven Labs API setup
-eleven_labs_api_key = os.environ.get('ELEVEN_LABS_KEY')
-eleven_labs_url = 'https://api.elevenlabs.io/synthesize'
-
-
-def text_to_speech(text):
-    response = requests.post(
-        eleven_labs_url,
-        headers={'Authorization': f'Bearer {eleven_labs_api_key}'},
-        json={'input': text}
-    )
-    return response.content
 
 
 @bp.route('/audio_get_recipe_options', methods=['POST'])
@@ -65,8 +51,8 @@ def audio_get_recipe_options():
                     # generate a response based on user
                     response = agent.generate_response("You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal", f"generate a persuasive question describing each of the following recipes: {numbered_recipes}")
                     print(f"recommendations: {response}")
-                    audio_stream = text_to_speech(response)
-                    return Response(audio_stream, mimetype='audio/mpeg')
+                    audio_bytes = agent.text_to_speech(response)
+                    return Response(audio_bytes, mimetype='audio/mpeg')
         except Exception as e:
             return str(e), 500
     return str("no file"), 400
