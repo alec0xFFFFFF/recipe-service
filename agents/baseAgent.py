@@ -26,7 +26,7 @@ class Agent:
         except Exception as e:
             return str(e)
 
-    def generate_vision_response(self, image_bytes):
+    def generate_vision_response(self, image_bytes, prompt):
 
         # Getting the base64 string
         base64_image = base64.b64encode(image_bytes.read()).decode('utf-8')
@@ -44,7 +44,7 @@ class Agent:
                     "content": [
                         {
                             "type": "text",
-                            "text": "Extract all the text in this image of a recipe."
+                            "text": prompt
                         },
                         {
                             "type": "image_url",
@@ -55,12 +55,12 @@ class Agent:
                     ]
                 }
             ],
-            "max_tokens": 300
+            "max_tokens": 1000
         }
 
         response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-        print(response.json())
-        return response.json()
+        print(response.json().choices[0].message.content)
+        return response.json().choices[0].message.content
 
     def get_embedding(self, text, model="text-embedding-3-large"):
         text = text.replace("\n", " ")
