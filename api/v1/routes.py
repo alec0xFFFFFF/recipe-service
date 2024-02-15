@@ -51,7 +51,7 @@ def audio_get_recipe_options():
             print(f"attempting to process audio")
             agent = baseAgent.Agent()
             in_mem = io.BytesIO()
-            in_mem.write(file.file.read())
+            in_mem.write(file.stream.read())
             in_mem.seek(0)
             recipe_request = agent.get_transcript(in_mem)
             print(f"Recipe request: {recipe_request}")
