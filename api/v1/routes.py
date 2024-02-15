@@ -1,6 +1,7 @@
 import hashlib
 import io
 import os
+import tempfile
 
 import boto3
 import requests
@@ -50,16 +51,25 @@ def audio_get_recipe_options():
             print(f"attempting to process audio")
             audio_stream = io.BytesIO(file.read())
             agent = baseAgent.Agent()
-            recipe_request = agent.get_transcript(file)
-            print(f"Recipe request: {recipe_request}")
-            closest_embeddings = get_nearest_recipes(recipe_request)
-            numbered_recipes = "\n".join([f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in enumerate(closest_embeddings)])
+            with tempfile.TemporaryFile() as temp_file:
+                file.save(temp_file)
+                temp_file.seek(0)  # Go to the beginning of the file
 
-            # generate a response based on user
-            response = agent.generate_response("You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal", f"generate a persuasive question describing each of the following recipes: {numbered_recipes}")
-            print(f"recommendations: {response}")
-            audio_stream = text_to_speech(response)
-            return Response(audio_stream, mimetype='audio/mpeg')
+                # Now temp_file is an open file object similar to what you get with open()
+                # You can read from it, or process it as needed
+
+                # Example: Read contents
+                content = temp_file.read()
+                recipe_request = agent.get_transcript(temp_file)
+                print(f"Recipe request: {recipe_request}")
+                closest_embeddings = get_nearest_recipes(recipe_request)
+                numbered_recipes = "\n".join([f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in enumerate(closest_embeddings)])
+
+                # generate a response based on user
+                response = agent.generate_response("You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal", f"generate a persuasive question describing each of the following recipes: {numbered_recipes}")
+                print(f"recommendations: {response}")
+                audio_stream = text_to_speech(response)
+                return Response(audio_stream, mimetype='audio/mpeg')
         except Exception as e:
             return str(e), 500
     return str("no file"), 400
