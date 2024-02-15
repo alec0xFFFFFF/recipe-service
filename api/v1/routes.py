@@ -56,7 +56,7 @@ def audio_get_recipe_options():
                     audio_bytes = agent.text_to_speech(response)
                     CHUNK_SIZE = 1024
                     with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as out_tmp:
-                        for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
+                        for chunk in audio_bytes.iter_content(chunk_size=CHUNK_SIZE):
                             if chunk:
                                 out_tmp.write(chunk)
                         out_t_p = out_tmp.name
