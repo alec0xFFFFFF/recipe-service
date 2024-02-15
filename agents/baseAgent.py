@@ -96,7 +96,7 @@ class Agent:
                 "use_speaker_boost": True
             }
         }
-        headers = {"Content-Type": "application/json", 'Authorization': f'Bearer {os.environ.get("ELEVEN_LABS_KEY")}'}
+        headers = {"Content-Type": "application/json", 'xi-api-key': os.environ.get("ELEVEN_LABS_KEY")}
 
         response = requests.request("POST", url, json=payload, headers=headers)
         print(response)
