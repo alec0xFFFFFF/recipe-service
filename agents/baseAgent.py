@@ -3,8 +3,6 @@ import os
 
 import requests
 from openai import OpenAI
-from elevenlabs.client import ElevenLabs
-from elevenlabs import generate
 
 eleven = ElevenLabs(
   api_key=os.environ.get('ELEVEN_LABS_KEY')
@@ -89,10 +87,22 @@ class Agent:
         )
         return response.data[0].url
 
-    def text_to_speech(self, text):
-        audio = generate(
-            text=text,
-            voice="Bella",
-            model="eleven_multilingual_v2"
-        )
-        return audio
+    def text_to_speech(self, text, voice_id="xNx17ebeAzBxoUz7iepQ", model_id="eleven_multilingual_v2"):
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+
+        payload = {
+            "model_id": model_id,
+            "text": text,
+            "voice_settings": {
+                "similarity_boost": 123,
+                "stability": 123,
+                "style": 123,
+                "use_speaker_boost": True
+            }
+        }
+        headers = {"Content-Type": "application/json", 'Authorization': f'Bearer {os.environ.get("ELEVEN_LABS_KEY")}'}
+
+        response = requests.request("POST", url, json=payload, headers=headers)
+        print(response)
+        print(response.json())
+        return response
