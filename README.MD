@@ -23,9 +23,11 @@ ROADMAP
 - list of places and dishes you want to try
 - allow whisper and elevenlabs to read instructions and ask questions/modify recipe
 - store techniques
-- 
 
 Use Case:
 - everyday cooking/weekly meal plannning and shopping
 - thanksgiving
 - weekend trip/airbnb rentals create shopping list
+
+Use gpt-v if not great 
+https://stackoverflow.com/questions/77284901/upload-an-image-to-chat-gpt-using-the-api

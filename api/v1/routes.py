@@ -12,6 +12,8 @@ import extract
 from agents import baseAgent
 from sqlalchemy import text
 from werkzeug.utils import secure_filename
+
+from agents.baseAgent import Agent
 from data.models import db, Recipe, DescriptionEmbeddings, IngredientsEmbeddings
 
 bp = Blueprint('bp', __name__)
@@ -97,6 +99,10 @@ def ocr_and_md5_recipe_request_images(files):
         file.stream.seek(0)
         uploaded = upload_to_s3(file_in_memory, md5_hash)
 
+        file_in_memory_1 = io.BytesIO(file_content)
+        file.stream.seek(0)  # Reset stream pointer
+        agent = Agent()
+        resp = agent.generate_vision_response(file_in_memory_1)
         file_in_memory_2 = io.BytesIO(file_content)
         file.stream.seek(0)  # Reset stream pointer
         ocr_text = extract.extract_text(file_in_memory_2)
