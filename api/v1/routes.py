@@ -50,6 +50,7 @@ def audio_get_recipe_options():
         try:
             print(f"attempting to process audio")
             audio_stream = io.BytesIO(file.read())
+            # upload to s3 and send?
             agent = baseAgent.Agent()
             with tempfile.TemporaryFile() as temp_file:
                 file.save(temp_file)
@@ -60,7 +61,7 @@ def audio_get_recipe_options():
 
                 # Example: Read contents
                 content = temp_file.read()
-                recipe_request = agent.get_transcript(temp_file)
+                recipe_request = agent.get_transcript(content)
                 print(f"Recipe request: {recipe_request}")
                 closest_embeddings = get_nearest_recipes(recipe_request)
                 numbered_recipes = "\n".join([f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in enumerate(closest_embeddings)])
