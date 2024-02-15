@@ -4,12 +4,8 @@ import os
 import requests
 from openai import OpenAI
 
-eleven = ElevenLabs(
-  api_key=os.environ.get('ELEVEN_LABS_KEY')
-)
 
 client = OpenAI()
-
 
 
 class Agent:
