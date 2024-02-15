@@ -3,10 +3,12 @@ import io
 import os
 
 import boto3
+import requests
 from botocore.exceptions import NoCredentialsError
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
 from psycopg2.extras import NumericRange
 from sqlalchemy.exc import IntegrityError
+import whisper
 
 import extract
 from agents import baseAgent
@@ -18,8 +20,61 @@ from data.models import db, Recipe, DescriptionEmbeddings, IngredientsEmbeddings
 
 bp = Blueprint('bp', __name__)
 
+
 def is_only_whitespace(s):
     return s.isspace()
+
+
+model = whisper.load_model("base")
+
+# Eleven Labs API setup
+eleven_labs_api_key = os.get('ELEVEN_LABS_KEY')
+eleven_labs_url = 'https://api.elevenlabs.io/synthesize'
+
+
+def speech_to_text(audio_stream):
+    audio = whisper.load_audio(audio_stream)
+    audio = whisper.pad_or_trim(audio)
+    mel = whisper.log_mel_spectrogram(audio).to(model.device)
+    _, probs = model.detect_language(mel)
+    options = whisper.DecodingOptions(fp16=False, language=probs.argmax().item())
+    result = whisper.decode(model, mel, options)
+    return result.text
+
+
+def text_to_speech(text):
+    response = requests.post(
+        eleven_labs_url,
+        headers={'Authorization': f'Bearer {eleven_labs_api_key}'},
+        json={'input': text}
+    )
+    return response.content
+
+
+@bp.route('/audio_get_recipe_options', methods=['POST'])
+def audio_get_recipe_options():
+    if 'file' not in request.files:
+        return "No file part", 400
+    file = request.files['file']
+    if file.filename == '':
+        return "No selected file", 400
+    if file:
+        try:
+            audio_stream = io.BytesIO(file.read())
+            agent = baseAgent.Agent()
+            recipe_request = speech_to_text(audio_stream)
+            print(f"Recipe request: {recipe_request}")
+            closest_embeddings = get_nearest_recipes(recipe_request)
+            numbered_recipes = "\n".join([f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in enumerate(closest_embeddings)])
+
+            # generate a response based on user
+            response = agent.generate_response("You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal", f"generate a persuasive question describing each of the following recipes: {numbered_recipes}")
+            audio_stream = text_to_speech(response)
+            return Response(audio_stream, mimetype='audio/mpeg')
+        except Exception as e:
+            return str(e), 500
+    return str("no file"), 400
+
 
 @bp.route('/', methods=['POST'])
 def submit_recipe():
@@ -71,7 +126,8 @@ def upload_to_s3(local_file, md5):
     :return: True if file was uploaded, else False
     """
     # Create an S3 client
-    s3 = boto3.client('s3', aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"), aws_secret_access_key=os.environ.get("AWS_SECRET_KEY_ID"), region_name="us-west-2")
+    s3 = boto3.client('s3', aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+                      aws_secret_access_key=os.environ.get("AWS_SECRET_KEY_ID"), region_name="us-west-2")
 
     try:
         s3.upload_fileobj(local_file, os.environ.get("IMAGE_BUCKET_NAME"), f"{md5}.png")
@@ -102,7 +158,8 @@ def ocr_and_md5_recipe_request_images(files):
         file_in_memory_1 = io.BytesIO(file_content)
         file.stream.seek(0)  # Reset stream pointer
         agent = Agent()
-        ocr_text = agent.generate_vision_response(file_in_memory_1, "Extract all the text in this image of a recipe. Skip the pleasantries and just return only the transcribed text.")
+        ocr_text = agent.generate_vision_response(file_in_memory_1,
+                                                  "Extract all the text in this image of a recipe. Skip the pleasantries and just return only the transcribed text.")
         file_in_memory_2 = io.BytesIO(file_content)
         file.stream.seek(0)  # Reset stream pointer
         # ocr_text = extract.extract_text(file_in_memory_2)
@@ -292,21 +349,15 @@ def modify_recipe(recipe_id):
         return jsonify({'message': str(e)}), 500
 
 
-@bp.route('/', methods=['GET'])
-def search_for_recipe():
+def get_nearest_recipes(query):
     agent = baseAgent.Agent()
-    query_string = request.args.get('query', '')
-
-    if not query_string:
-        return jsonify({"error": "No query string provided"}), 400
-
-    embeddings = agent.get_embedding(query_string)
+    embeddings = agent.get_embedding(query)
     sql_query = text("""
-        SELECT recipe.* FROM recipe
-        JOIN description_embeddings ON recipe.id = description_embeddings.recipe_id
-        ORDER BY description_embeddings.embeddings <-> CAST(:embeddings AS vector)
-        LIMIT 5;
-    """)
+            SELECT recipe.* FROM recipe
+            JOIN description_embeddings ON recipe.id = description_embeddings.recipe_id
+            ORDER BY description_embeddings.embeddings <-> CAST(:embeddings AS vector)
+            LIMIT 5;
+        """)
 
     query_params = {"embeddings": embeddings}
 
@@ -315,10 +366,21 @@ def search_for_recipe():
     # Retrieve the rows from the result
     rows = result.fetchall()
 
-    # Serialize the results
-    closest_embeddings = [
+    return [
         {"id": row.id, "author": row.author, "title": row.title, "description": row.description} for row in
         rows]
+
+
+@bp.route('/', methods=['GET'])
+def search_for_recipe():
+    agent = baseAgent.Agent()
+    query_string = request.args.get('query', '')
+
+    if not query_string:
+        return jsonify({"error": "No query string provided"}), 400
+
+    # Serialize the results
+    closest_embeddings = get_nearest_recipes(query_string)
     return jsonify({"dishes": closest_embeddings})
 
 
