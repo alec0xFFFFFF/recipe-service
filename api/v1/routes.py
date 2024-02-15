@@ -25,7 +25,7 @@ def is_only_whitespace(s):
 
 
 # Eleven Labs API setup
-eleven_labs_api_key = os.get('ELEVEN_LABS_KEY')
+eleven_labs_api_key = os.environ.get('ELEVEN_LABS_KEY')
 eleven_labs_url = 'https://api.elevenlabs.io/synthesize'
 
 
