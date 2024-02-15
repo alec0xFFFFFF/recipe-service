@@ -77,7 +77,6 @@ def submit_recipe():
     if not files or any(file.filename == '' for file in files):
         return 'No selected file', 400
     ocr_text, md5 = ocr_and_md5_recipe_request_images(files)
-    print(f"post req ocr : {ocr_text}")
     if not is_only_whitespace(ocr_text_from_request):
         # print(f"------ocr_text from req: {ocr_text_from_request}")
         # print(ocr_text_from_request)
@@ -166,7 +165,6 @@ def ocr_and_md5_recipe_request_images(files):
 
 def generate_recipe_from_image(ocr_text, md5):
     agent = baseAgent.Agent()
-    print(f"ocr text: {ocr_text}")
     ingredients = agent.generate_response(
         f"You are an food recipe ingredients extraction agent. Your goal is to extract the ingredients from the "
         f"recipe provided by the user. You must use the exact wordage of the ingredient and measurement in the "

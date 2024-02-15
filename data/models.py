@@ -21,10 +21,11 @@ class Recipe(db.Model):
     deleted = db.Column(Boolean, nullable=False, default=False)
 
     def to_dict(self):
+        print(f"{self.servings}")
         return {
             'id': self.id,
             "ingredients": self.ingredients,
-            "servings": self.servings,
+            "servings": {"start": self.servings.lower, "end": self.servings.upper},
             "submission_md5": self.submission_md5,
             "steps": self.steps,
             "equipment": self.equipment,
