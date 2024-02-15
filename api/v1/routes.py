@@ -69,6 +69,7 @@ def audio_get_recipe_options():
 
             # generate a response based on user
             response = agent.generate_response("You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal", f"generate a persuasive question describing each of the following recipes: {numbered_recipes}")
+            print(f"recommendations: {response}")
             audio_stream = text_to_speech(response)
             return Response(audio_stream, mimetype='audio/mpeg')
         except Exception as e:
