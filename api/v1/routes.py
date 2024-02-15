@@ -48,9 +48,8 @@ def audio_get_recipe_options():
     if file:
         try:
             print(f"attempting to process audio")
-            buffered_reader = io.BufferedReader(file)
             agent = baseAgent.Agent()
-            recipe_request = agent.get_transcript(buffered_reader)
+            recipe_request = agent.get_transcript(file.stream)
             print(f"Recipe request: {recipe_request}")
             closest_embeddings = get_nearest_recipes(recipe_request)
             numbered_recipes = "\n".join([f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in enumerate(closest_embeddings)])
