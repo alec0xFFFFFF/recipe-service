@@ -47,6 +47,7 @@ def audio_get_recipe_options():
         return "No selected file", 400
     if file:
         try:
+            print(f"attempting to process audio")
             audio_stream = io.BytesIO(file.read())
             agent = baseAgent.Agent()
             recipe_request = agent.get_transcript(audio_stream)
