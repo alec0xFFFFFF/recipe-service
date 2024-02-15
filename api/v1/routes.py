@@ -8,6 +8,7 @@ from botocore.exceptions import NoCredentialsError
 from flask import Blueprint, request, jsonify, Response
 from psycopg2.extras import NumericRange
 from sqlalchemy.exc import IntegrityError
+# from elevenlabs import generate, stream
 
 import extract
 from agents import baseAgent
@@ -49,7 +50,10 @@ def audio_get_recipe_options():
         try:
             print(f"attempting to process audio")
             agent = baseAgent.Agent()
-            recipe_request = agent.get_transcript(file.stream)
+            in_mem = io.BytesIO()
+            in_mem.write(file.file.read())
+            in_mem.seek(0)
+            recipe_request = agent.get_transcript(in_mem)
             print(f"Recipe request: {recipe_request}")
             closest_embeddings = get_nearest_recipes(recipe_request)
             numbered_recipes = "\n".join([f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in enumerate(closest_embeddings)])
