@@ -50,24 +50,23 @@ def audio_get_recipe_options():
     if file:
         try:
             print(f"attempting to process audio")
-            try:
-                # Save the uploaded .3gp file to a temporary file
-                with tempfile.NamedTemporaryFile(suffix='.m4a', delete=False) as tmp:
-                    file.save(tmp.name)
-                    tmp_path = tmp.name
-                    # OpenAI API call with the converted .mp3 file
-                    with open(tmp_path, 'rb') as tmp_file:
-                        agent = baseAgent.Agent()
-                        recipe_request = agent.get_transcript(tmp_file)
-                        print(f"Recipe request: {recipe_request}")
-                        closest_embeddings = get_nearest_recipes(recipe_request)
-                        numbered_recipes = "\n".join([f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in enumerate(closest_embeddings)])
+            # Save the uploaded .3gp file to a temporary file
+            with tempfile.NamedTemporaryFile(suffix='.m4a', delete=False) as tmp:
+                file.save(tmp.name)
+                tmp_path = tmp.name
+                # OpenAI API call with the converted .mp3 file
+                with open(tmp_path, 'rb') as tmp_file:
+                    agent = baseAgent.Agent()
+                    recipe_request = agent.get_transcript(tmp_file)
+                    print(f"Recipe request: {recipe_request}")
+                    closest_embeddings = get_nearest_recipes(recipe_request)
+                    numbered_recipes = "\n".join([f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in enumerate(closest_embeddings)])
 
-                        # generate a response based on user
-                        response = agent.generate_response("You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal", f"generate a persuasive question describing each of the following recipes: {numbered_recipes}")
-                        print(f"recommendations: {response}")
-                        audio_stream = text_to_speech(response)
-                        return Response(audio_stream, mimetype='audio/mpeg')
+                    # generate a response based on user
+                    response = agent.generate_response("You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal", f"generate a persuasive question describing each of the following recipes: {numbered_recipes}")
+                    print(f"recommendations: {response}")
+                    audio_stream = text_to_speech(response)
+                    return Response(audio_stream, mimetype='audio/mpeg')
         except Exception as e:
             return str(e), 500
     return str("no file"), 400
