@@ -98,6 +98,4 @@ class Agent:
         headers = {"Content-Type": "application/json", 'xi-api-key': os.environ.get("ELEVEN_LABS_KEY")}
 
         response = requests.request("POST", url, json=payload, headers=headers)
-        print(response)
-        print(response.json())
         return response
