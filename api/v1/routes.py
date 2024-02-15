@@ -8,7 +8,6 @@ from botocore.exceptions import NoCredentialsError
 from flask import Blueprint, request, jsonify, Response
 from psycopg2.extras import NumericRange
 from sqlalchemy.exc import IntegrityError
-import whisper
 
 import extract
 from agents import baseAgent
@@ -25,21 +24,9 @@ def is_only_whitespace(s):
     return s.isspace()
 
 
-model = whisper.load_model("base")
-
 # Eleven Labs API setup
 eleven_labs_api_key = os.get('ELEVEN_LABS_KEY')
 eleven_labs_url = 'https://api.elevenlabs.io/synthesize'
-
-
-def speech_to_text(audio_stream):
-    audio = whisper.load_audio(audio_stream)
-    audio = whisper.pad_or_trim(audio)
-    mel = whisper.log_mel_spectrogram(audio).to(model.device)
-    _, probs = model.detect_language(mel)
-    options = whisper.DecodingOptions(fp16=False, language=probs.argmax().item())
-    result = whisper.decode(model, mel, options)
-    return result.text
 
 
 def text_to_speech(text):
@@ -62,7 +49,7 @@ def audio_get_recipe_options():
         try:
             audio_stream = io.BytesIO(file.read())
             agent = baseAgent.Agent()
-            recipe_request = speech_to_text(audio_stream)
+            recipe_request = agent.get_transcript(audio_stream)
             print(f"Recipe request: {recipe_request}")
             closest_embeddings = get_nearest_recipes(recipe_request)
             numbered_recipes = "\n".join([f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in enumerate(closest_embeddings)])

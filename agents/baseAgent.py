@@ -26,6 +26,14 @@ class Agent:
         except Exception as e:
             return str(e)
 
+    def get_transcript(self, audio_stream):
+        transcript = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_stream.read(),
+            response_format="text"
+        )
+        return transcript
+
     def generate_vision_response(self, image_bytes, prompt):
 
         # Getting the base64 string
