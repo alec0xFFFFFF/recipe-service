@@ -50,10 +50,10 @@ def audio_get_recipe_options():
         try:
             print(f"attempting to process audio")
             agent = baseAgent.Agent()
-            in_mem = io.BytesIO()
-            in_mem.write(file.stream.read())
-            in_mem.seek(0)
-            recipe_request = agent.get_transcript(in_mem)
+            audio_data = file.stream.read()
+            buffer = io.BytesIO(audio_data)
+            buffer.name = "file.m4a"
+            recipe_request = agent.get_transcript(audio_data)
             print(f"Recipe request: {recipe_request}")
             closest_embeddings = get_nearest_recipes(recipe_request)
             numbered_recipes = "\n".join([f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in enumerate(closest_embeddings)])
