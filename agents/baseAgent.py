@@ -89,11 +89,9 @@ class Agent:
         payload = {
             "model_id": model_id,
             "text": text,
-            "voice_settings": {
-                "similarity_boost": 123,
-                "stability": 123,
-                "style": 123,
-                "use_speaker_boost": True
+            "voice_settings":  {
+                "stability": 0.5,
+                "similarity_boost": 0.5
             }
         }
         headers = {"Content-Type": "application/json", 'xi-api-key': os.environ.get("ELEVEN_LABS_KEY")}
