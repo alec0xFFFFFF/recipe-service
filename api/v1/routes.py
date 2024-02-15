@@ -4,9 +4,8 @@ import os
 import tempfile
 
 import boto3
-import requests
 from botocore.exceptions import NoCredentialsError
-from flask import Blueprint, request, jsonify, Response
+from flask import Blueprint, request, jsonify, Response, send_file
 from psycopg2.extras import NumericRange
 from sqlalchemy.exc import IntegrityError
 
@@ -23,7 +22,6 @@ bp = Blueprint('bp', __name__)
 
 def is_only_whitespace(s):
     return s.isspace()
-
 
 
 @bp.route('/audio_get_recipe_options', methods=['POST'])
@@ -46,13 +44,18 @@ def audio_get_recipe_options():
                     recipe_request = agent.get_transcript(tmp_file)
                     print(f"Recipe request: {recipe_request}")
                     closest_embeddings = get_nearest_recipes(recipe_request)
-                    numbered_recipes = "\n".join([f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in enumerate(closest_embeddings)])
+                    numbered_recipes = "\n".join(
+                        [f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in
+                         enumerate(closest_embeddings)])
 
                     # generate a response based on user
-                    response = agent.generate_response("You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal", f"generate a persuasive question describing each of the following recipes: {numbered_recipes}")
+                    response = agent.generate_response(
+                        "You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal",
+                        f"generate a persuasive question describing each of the following recipes: {numbered_recipes}")
                     print(f"recommendations: {response}")
                     audio_bytes = agent.text_to_speech(response)
-                    return Response(audio_bytes, mimetype='audio/mpeg')
+                    return send_file(audio_bytes, mimetype='audio/wav', as_attachment=True, download_name='narration'
+                                                                                                          '.wav')
         except Exception as e:
             return str(e), 500
     return str("no file"), 400

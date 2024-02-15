@@ -4,7 +4,7 @@ import os
 import requests
 from openai import OpenAI
 from elevenlabs.client import ElevenLabs
-from elevenlabs import generate, stream
+from elevenlabs import generate
 
 eleven = ElevenLabs(
   api_key=os.environ.get('ELEVEN_LABS_KEY')
