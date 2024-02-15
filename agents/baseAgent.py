@@ -29,7 +29,7 @@ class Agent:
     def generate_vision_response(self, image_bytes):
 
         # Getting the base64 string
-        base64_image = base64.b64encode(image_bytes).decode('utf-8')
+        base64_image = base64.b64encode(image_bytes.read()).decode('utf-8')
 
         headers = {
             "Content-Type": "application/json",
