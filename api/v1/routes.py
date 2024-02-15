@@ -54,16 +54,12 @@ def audio_get_recipe_options():
                         f"generate a persuasive question describing each of the following recipes: {numbered_recipes}")
                     print(f"recommendations: {response}")
                     audio_bytes = agent.text_to_speech(response)
-                    CHUNK_SIZE = 1024
-                    with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as out_tmp:
-                        for chunk in audio_bytes.iter_content(chunk_size=CHUNK_SIZE):
-                            if chunk:
-                                out_tmp.write(chunk)
-                        out_t_p = out_tmp.name
-                        # OpenAI API call with the converted .mp3 file
-                        with open(out_t_p, 'rb') as out_tmp_file:
-                            return send_file(out_tmp_file, mimetype='audio/wav', as_attachment=True, download_name='narration'
-                                                                                                          '.mp3')
+                    with tempfile.NamedTemporaryFile(suffix='.mp3', mode='wb', delete=False) as out_tmp:
+                        out_tmp.write(audio_bytes)
+                        out_tmp_path = out_tmp.name
+
+                    # Now, send the file as an attachment
+                    return send_file(out_tmp_path, mimetype='audio/mpeg', as_attachment=True, download_name='narration.mp3')
         except Exception as e:
             return str(e), 500
     return str("no file"), 400
