@@ -151,10 +151,11 @@ def ocr_and_md5_recipe_request_images(files):
         file_in_memory_2 = io.BytesIO(file_content)
         file.stream.seek(0)  # Reset stream pointer
         # ocr_text = extract.extract_text(file_in_memory_2)
+        print(f"ocr: {ocr_text}")
         all_ocr_text += ocr_text + ' '  # Concatenate text from each file
         md5s.append(md5_hash)
     concatenated_md5s = ''.join(md5s)
-    print("finished ocr'ing")
+    print(f"finished ocr'ing: {all_ocr_text}")
 
     # Compute MD5 of the concatenated string of individual hashes
     combined_md5 = hashlib.md5(concatenated_md5s.encode()).hexdigest()
