@@ -54,12 +54,14 @@ def audio_get_recipe_options():
                         f"generate a persuasive question describing each of the following recipes: {numbered_recipes}")
                     print(f"recommendations: {response}")
                     audio_bytes = agent.text_to_speech(response)
-                    with tempfile.NamedTemporaryFile(suffix='.mp3', mode='wb', delete=False) as out_tmp:
-                        out_tmp.write(audio_bytes)
-                        out_tmp_path = out_tmp.name
-
-                    # Now, send the file as an attachment
-                    return send_file(out_tmp_path, mimetype='audio/mpeg', as_attachment=True, download_name='narration.mp3')
+                    CHUNK_SIZE = 1024
+                    chunks = b''
+                    for chunk in audio_bytes.iter_content(chunk_size=CHUNK_SIZE):
+                        if chunk:
+                            chunks += chunk
+                    out_bytes = io.BytesIO(chunks)
+                    return send_file(out_bytes, mimetype='audio/wav', as_attachment=True, download_name='narration'
+                                                                                                          '.mp3')
         except Exception as e:
             return str(e), 500
     return str("no file"), 400
