@@ -84,7 +84,6 @@ class Agent:
         return response.data[0].url
 
     def text_to_speech(self, text, voice_id="xNx17ebeAzBxoUz7iepQ", model_id="eleven_multilingual_v2"):
-        text = "hello world"
         url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
 
         payload = {
