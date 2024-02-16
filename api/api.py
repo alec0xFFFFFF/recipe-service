@@ -1,6 +1,7 @@
 import os
 
 from flask import Flask
+from flask_socketio import SocketIO
 
 from data.models import db
 from dotenv import load_dotenv
@@ -17,6 +18,7 @@ db_params = {
 
 def create_api():
     app = Flask(__name__)
+    socketio = SocketIO(app)
 
     # Database configuration
     app.config[
@@ -26,7 +28,8 @@ def create_api():
     db.init_app(app)
 
     # Import routes after db to avoid circular imports
-    from api.v1.routes import init_api_v1
+    from api.v1.routes import init_api_v1, register_socketio_events
     init_api_v1(app)
+    register_socketio_events(socketio)
 
-    return app
+    return app, socketio

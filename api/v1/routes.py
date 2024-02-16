@@ -440,3 +440,13 @@ def search_pantry():
 
 def init_api_v1(app):
     app.register_blueprint(bp, url_prefix='/v1')
+
+
+def register_socketio_events(socketio):
+    @socketio.on('connect')
+    def handle_connect():
+        print('Client connected to my_blueprint')
+
+    @socketio.on('disconnect')
+    def handle_disconnect():
+        print('Client disconnected from my_blueprint')
