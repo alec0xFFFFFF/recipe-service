@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import io
 import os
@@ -5,6 +6,8 @@ import tempfile
 
 import boto3
 import requests
+import socketio
+import websockets
 from botocore.exceptions import NoCredentialsError
 from elevenlabs import generate, stream, set_api_key
 from flask import Blueprint, request, jsonify, send_file
@@ -70,6 +73,23 @@ def audio_get_recipe_options():
         except Exception as e:
             return str(e), 500
     return str("no file"), 400
+
+
+@bp.route('/chat', methods=['POST'])
+def audio_get_recipe_options():
+    recipe_request = request.json()['recipe_request']
+    print(f"Recipe request: {recipe_request}")
+    closest_embeddings = get_nearest_recipes(recipe_request)
+    numbered_recipes = "\n".join(
+        [f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in
+         enumerate(closest_embeddings)])
+    # generate a response based on user
+    agent = baseAgent.Agent()
+    response = agent.generate_response(
+        f"You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal.Your response will be read directly by a narrator so make it cohesive and don't label the options with numbers. if any recipe looks incomplete or has `sorry` in it you must not give that option. Address the user's recipe request by describing and pitching the following recipes: {numbered_recipes}",
+        recipe_request)
+    print(f"recommendations: {response}")
+    return jsonify({"content": response})
 
 
 @bp.route('/', methods=['POST'])
@@ -477,27 +497,37 @@ def init_api_v1(app):
     app.register_blueprint(bp, url_prefix='/v1')
 
 
-def register_socketio_events(socketio):
-    @socketio.on('connect')
+def register_socketio_events(sio):
+    @sio.on('connect')
     def handle_connect():
         print('Client connected to my_blueprint')
         socketio.emit('someEvent', "hello from the server", broadcast=True)
 
-    @socketio.on('disconnect')
+    @sio.on('disconnect')
     def handle_disconnect():
         print('Client disconnected from my_blueprint')
 
-    @socketio.on('messageEvent')
+    @sio.on('messageEvent')
     def handle_message_event(data):
         print('Received message:', data)
 
-    @socketio.on('audio_chunk')
+    @sio.on('audio_chunk')
     def handle_audio_chunk(data):
         # 'data' is the received audio chunk
         # Append this chunk to an audio file or process as needed
         print("Received an audio chunk")
 
-    @socketio.on('some_event')
+    @sio.on('some_event')
     def handle_some_event(data):
         # This will broadcast the message to all clients except the sender
         socketio.emit('someEvent', data, broadcast=True)
+
+    @sio.on('stream-speak')
+    def handle_text_data(json):
+        text = json['text']
+
+        asyncio.get_event_loop().run_until_complete(
+            websockets.connect(
+                lambda ws: text_to_speech(ws, text)
+            )
+        )
