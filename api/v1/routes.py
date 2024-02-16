@@ -78,9 +78,7 @@ def audio_get_recipe_options():
 @bp.route('/chat', methods=['POST'])
 def chat():
     print("chat recieved")
-    print(request.json)
-    print(request.json())
-    msg = request.json()['content']
+    msg = request.json['content']
     print(f"Chat request: {msg}")
     closest_embeddings = get_nearest_recipes(msg)
     numbered_recipes = "\n".join(
