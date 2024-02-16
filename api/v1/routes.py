@@ -50,8 +50,8 @@ def audio_get_recipe_options():
 
                     # generate a response based on user
                     response = agent.generate_response(
-                        "You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal.Your response will be read directly by a narrator so make it cohesive and don't label the options with numbers. if any recipe looks incomplete or has `sorry` in it you must not give that option.",
-                        f"generate a persuasive question describing each of the following recipes: {numbered_recipes}")
+                        f"You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal.Your response will be read directly by a narrator so make it cohesive and don't label the options with numbers. if any recipe looks incomplete or has `sorry` in it you must not give that option. Address the user's recipe request by describing and pitching the following recipes: {numbered_recipes}",
+                        recipe_request)
                     print(f"recommendations: {response}")
                     audio_bytes = agent.text_to_speech(response)
                     CHUNK_SIZE = 1024
