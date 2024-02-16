@@ -4,7 +4,9 @@ import os
 import tempfile
 
 import boto3
+import requests
 from botocore.exceptions import NoCredentialsError
+from elevenlabs import generate, stream, set_api_key
 from flask import Blueprint, request, jsonify, send_file
 from psycopg2.extras import NumericRange
 from sqlalchemy.exc import IntegrityError
@@ -16,8 +18,11 @@ from werkzeug.utils import secure_filename
 
 from agents.baseAgent import Agent
 from data.models import db, Recipe, DescriptionEmbeddings, IngredientsEmbeddings
+WEBRTC_SERVER_URL = os.getenv('WEBRTC_SERVER_URL')  # Replace with your WebRTC server endpoint
 
 bp = Blueprint('bp', __name__)
+
+set_api_key(os.getenv("ELEVEN_LABS_KEY"))
 
 
 def is_only_whitespace(s):
@@ -152,10 +157,6 @@ def ocr_and_md5_recipe_request_images(files):
         agent = Agent()
         ocr_text = agent.generate_vision_response(file_in_memory_1,
                                                   "Extract all the text in this image of a recipe. Skip the pleasantries and just return only the transcribed text.")
-        file_in_memory_2 = io.BytesIO(file_content)
-        file.stream.seek(0)  # Reset stream pointer
-        # ocr_text = extract.extract_text(file_in_memory_2)
-        # return ocr_text, md5_hash
         all_ocr_text += ocr_text + "\n"  # Concatenate text from each file
         md5s.append(md5_hash)
     concatenated_md5s = ''.join(md5s)
@@ -430,6 +431,40 @@ def search_pantry():
         rows]
 
     return jsonify(closest_embeddings)
+
+def generate_example_text(text):
+    yield "Hello world"
+    yield "this is a test"
+    yield text
+
+
+@bp.route("/speak", methods=["POST"])
+def speak():
+    audio = generate(
+        text=generate_example_text(request.args.get('text', 'goodbye world')),
+        voice="Antoni",
+        model="eleven_multilingual_v2",
+        stream=True
+    )
+    stream(audio)
+
+
+@bp.route('/offer', methods=['POST'])
+def offer():
+    data = request.get_json()
+    user_query = data.get("userQuery")  # Extract the user query
+
+    # todo accept audio file or text file then run the search and format and return
+
+    # Forward the offer and user query to the WebRTC server
+    webrtc_response = requests.post(WEBRTC_SERVER_URL, json={
+        'sdp': data['sdp'],
+        'type': data['type'],
+        'userQuery': user_query
+    })
+
+    # Assuming the WebRTC server responds with an SDP answer
+    return jsonify(webrtc_response.json())
 
 
 # todo recommend recipe based on my pantry
