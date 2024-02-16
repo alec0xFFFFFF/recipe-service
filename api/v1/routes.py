@@ -76,10 +76,10 @@ def audio_get_recipe_options():
 
 
 @bp.route('/chat', methods=['POST'])
-def audio_get_recipe_options():
-    recipe_request = request.json()['recipe_request']
-    print(f"Recipe request: {recipe_request}")
-    closest_embeddings = get_nearest_recipes(recipe_request)
+def chat():
+    msg = request.json()['content']
+    print(f"Chat request: {msg}")
+    closest_embeddings = get_nearest_recipes(msg)
     numbered_recipes = "\n".join(
         [f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in
          enumerate(closest_embeddings)])
@@ -87,7 +87,7 @@ def audio_get_recipe_options():
     agent = baseAgent.Agent()
     response = agent.generate_response(
         f"You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal.Your response will be read directly by a narrator so make it cohesive and don't label the options with numbers. if any recipe looks incomplete or has `sorry` in it you must not give that option. Address the user's recipe request by describing and pitching the following recipes: {numbered_recipes}",
-        recipe_request)
+        msg)
     print(f"recommendations: {response}")
     return jsonify({"content": response})
 
