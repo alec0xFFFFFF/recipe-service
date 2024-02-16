@@ -5,11 +5,11 @@ from flask import Flask
 from data.models import db
 
 db_params = {
-    "dbname": os.environ.get("PGDATABASE"),
-    "user": os.environ.get("PGUSER"),
-    "password": os.environ.get("PGPASSWORD"),
-    "host": os.environ.get("PGHOST"),
-    "port": int(os.environ.get("PGPORT"))
+    "dbname": os.getenv("PGDATABASE"),
+    "user": os.getenv("PGUSER"),
+    "password": os.getenv("PGPASSWORD"),
+    "host": os.getenv("PGHOST"),
+    "port": int(os.getenv("PGPORT"))
 }
 
 

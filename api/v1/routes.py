@@ -118,11 +118,11 @@ def upload_to_s3(local_file, md5):
     :return: True if file was uploaded, else False
     """
     # Create an S3 client
-    s3 = boto3.client('s3', aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
-                      aws_secret_access_key=os.environ.get("AWS_SECRET_KEY_ID"), region_name="us-west-2")
+    s3 = boto3.client('s3', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                      aws_secret_access_key=os.getenv("AWS_SECRET_KEY_ID"), region_name="us-west-2")
 
     try:
-        s3.upload_fileobj(local_file, os.environ.get("IMAGE_BUCKET_NAME"), f"{md5}.png")
+        s3.upload_fileobj(local_file, os.getenv("IMAGE_BUCKET_NAME"), f"{md5}.png")
         print(f"Upload Successful: {md5}.png")
         return True
     except FileNotFoundError:

@@ -94,7 +94,7 @@ class Agent:
                 "similarity_boost": 0.5
             }
         }
-        headers = {"Content-Type": "application/json", 'xi-api-key': os.environ.get("ELEVEN_LABS_KEY")}
+        headers = {"Content-Type": "application/json", 'xi-api-key': os.getenv("ELEVEN_LABS_KEY")}
 
         response = requests.request("POST", url, json=payload, headers=headers)
         return response
