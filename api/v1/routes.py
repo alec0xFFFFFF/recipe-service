@@ -24,7 +24,7 @@ def is_only_whitespace(s):
     return s.isspace()
 
 
-@bp.route('/audio_get_recipe_options', methods=['POST'])
+@bp.route('/audio-recipe-options', methods=['POST'])
 def audio_get_recipe_options():
     if 'file' not in request.files:
         return "No file part", 400
@@ -34,7 +34,7 @@ def audio_get_recipe_options():
     if file:
         try:
             print(f"attempting to process audio")
-            # Save the uploaded .3gp file to a temporary file
+            # todo save input and output to s3
             with tempfile.NamedTemporaryFile(suffix='.m4a', delete=False) as tmp:
                 file.save(tmp.name)
                 tmp_path = tmp.name
@@ -50,7 +50,7 @@ def audio_get_recipe_options():
 
                     # generate a response based on user
                     response = agent.generate_response(
-                        "You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal",
+                        "You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal.Your response will be read directly by a narrator so make it cohesive and don't label the options with numbers. if any recipe looks incomplete or has `sorry` in it you must not give that option.",
                         f"generate a persuasive question describing each of the following recipes: {numbered_recipes}")
                     print(f"recommendations: {response}")
                     audio_bytes = agent.text_to_speech(response)
