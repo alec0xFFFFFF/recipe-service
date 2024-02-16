@@ -61,7 +61,7 @@ def audio_get_recipe_options():
                             chunks += chunk
                     out_bytes = io.BytesIO(chunks)
                     return send_file(out_bytes, mimetype='audio/wav', as_attachment=True, download_name='narration'
-                                                                                                          '.mp3')
+                                                                                                        '.mp3')
         except Exception as e:
             return str(e), 500
     return str("no file"), 400
@@ -446,6 +446,7 @@ def register_socketio_events(socketio):
     @socketio.on('connect')
     def handle_connect():
         print('Client connected to my_blueprint')
+        socketio.emit('someEvent', "hello from the server", broadcast=True)
 
     @socketio.on('disconnect')
     def handle_disconnect():
@@ -460,3 +461,8 @@ def register_socketio_events(socketio):
         # 'data' is the received audio chunk
         # Append this chunk to an audio file or process as needed
         print("Received an audio chunk")
+
+    @socketio.on('some_event')
+    def handle_some_event(data):
+        # This will broadcast the message to all clients except the sender
+        socketio.emit('someEvent', data, broadcast=True)
