@@ -3,6 +3,8 @@ import os
 from flask import Flask
 
 from data.models import db
+from dotenv import load_dotenv
+load_dotenv()
 
 db_params = {
     "dbname": os.getenv("PGDATABASE"),
