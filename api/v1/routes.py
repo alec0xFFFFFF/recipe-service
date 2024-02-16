@@ -450,3 +450,13 @@ def register_socketio_events(socketio):
     @socketio.on('disconnect')
     def handle_disconnect():
         print('Client disconnected from my_blueprint')
+
+    @socketio.on('messageEvent')
+    def handle_message_event(data):
+        print('Received message:', data)
+
+    @socketio.on('audio_chunk')
+    def handle_audio_chunk(data):
+        # 'data' is the received audio chunk
+        # Append this chunk to an audio file or process as needed
+        print("Received an audio chunk")
