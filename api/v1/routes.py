@@ -5,7 +5,7 @@ import tempfile
 
 import boto3
 from botocore.exceptions import NoCredentialsError
-from flask import Blueprint, request, jsonify, Response, send_file
+from flask import Blueprint, request, jsonify, send_file
 from psycopg2.extras import NumericRange
 from sqlalchemy.exc import IntegrityError
 
