@@ -1,16 +1,18 @@
 import asyncio
+import base64
 import hashlib
 import io
+import json
 import os
 import tempfile
 
 import boto3
 import requests
-import socketio
 import websockets
 from botocore.exceptions import NoCredentialsError
 from elevenlabs import generate, stream, set_api_key
-from flask import Blueprint, request, jsonify, send_file
+from flask import Blueprint, request, jsonify, send_file, stream_with_context, Response
+from openai import AsyncOpenAI
 from psycopg2.extras import NumericRange
 from sqlalchemy.exc import IntegrityError
 
@@ -24,8 +26,11 @@ from data.models import db, Recipe, DescriptionEmbeddings, IngredientsEmbeddings
 WEBRTC_SERVER_URL = os.getenv('WEBRTC_SERVER_URL')  # Replace with your WebRTC server endpoint
 
 bp = Blueprint('bp', __name__)
-
+ELEVENLABS_API_KEY = os.getenv("ELEVEN_LABS_KEY")
 set_api_key(os.getenv("ELEVEN_LABS_KEY"))
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+aclient = AsyncOpenAI(api_key=OPENAI_API_KEY)
+VOICE_ID = '21m00Tcm4TlvDq8ikWAM'
 
 
 def is_only_whitespace(s):
@@ -477,6 +482,96 @@ def speak():
     stream(audio)
 
 
+
+# Async route for text-to-speech conversion
+@bp.route('/tts', methods=['POST'])
+async def tts():
+    data = request.json
+    user_query = data['query']
+    audio_stream = asyncio.create_task(chat_completion(user_query))
+    return Response(stream_with_context(audio_stream_generator(audio_stream)), mimetype='audio/mpeg')
+
+
+# Your existing async functions (chat_completion, text_to_speech_input_streaming, etc.)
+# ...
+
+async def text_chunker(chunks):
+    """Split text into chunks, ensuring to not break sentences."""
+    splitters = (".", ",", "?", "!", ";", ":", "—", "-", "(", ")", "[", "]", "}", " ")
+    buffer = ""
+
+    async for text in chunks:
+        if buffer.endswith(splitters):
+            yield buffer + " "
+            buffer = text
+        elif text.startswith(splitters):
+            yield buffer + text[0] + " "
+            buffer = text[1:]
+        else:
+            buffer += text
+
+    if buffer:
+        yield buffer + " "
+
+
+async def chat_completion(query):
+    """Retrieve text from OpenAI and pass it to the text-to-speech function."""
+    response = await aclient.chat.completions.create(model='gpt-4', messages=[{'role': 'user', 'content': query}],
+                                                     temperature=1, stream=True)
+
+    async def text_iterator():
+        async for chunk in response:
+            delta = chunk.choices[0].delta
+            print(delta.content)
+            yield delta.content
+
+    await text_to_speech_input_streaming(VOICE_ID, text_iterator())
+
+
+async def text_to_speech_input_streaming(voice_id, text_iterator):
+    """Send text to ElevenLabs API and stream the returned audio."""
+    uri = f"wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream-input?model_id=eleven_monolingual_v1"
+
+    async with websockets.connect(uri) as websocket:
+        await websocket.send(json.dumps({
+            "text": " ",
+            "voice_settings": {"stability": 0.5, "similarity_boost": 0.8},
+            "xi_api_key": ELEVENLABS_API_KEY,
+        }))
+
+        async def listen():
+            """Listen to the websocket for audio data and yield it."""
+            while True:
+                try:
+                    message = await websocket.recv()
+                    data = json.loads(message)
+                    if data.get("audio"):
+                        yield base64.b64decode(data["audio"])
+                    elif data.get('isFinal'):
+                        break
+                except websockets.exceptions.ConnectionClosed:
+                    print("Connection closed")
+                    break
+
+        listen_generator = listen()
+
+        async for text in text_chunker(text_iterator):
+            await websocket.send(json.dumps({"text": text, "try_trigger_generation": True}))
+
+        await websocket.send(json.dumps({"text": ""}))
+
+        # Instead of creating a separate task, return the generator itself
+        return listen_generator
+
+
+# Generator function to adapt the audio stream for Flask Response
+async def audio_stream_generator(audio_stream):
+    async for chunk in audio_stream:
+        yield chunk
+
+
+
+
 @bp.route('/offer', methods=['POST'])
 def offer():
     data = request.get_json()
@@ -504,38 +599,3 @@ def offer():
 def init_api_v1(app):
     app.register_blueprint(bp, url_prefix='/v1')
 
-
-def register_socketio_events(sio):
-    @sio.on('connect')
-    def handle_connect():
-        print('Client connected to my_blueprint')
-        socketio.emit('someEvent', "hello from the server", broadcast=True)
-
-    @sio.on('disconnect')
-    def handle_disconnect():
-        print('Client disconnected from my_blueprint')
-
-    @sio.on('messageEvent')
-    def handle_message_event(data):
-        print('Received message:', data)
-
-    @sio.on('audio_chunk')
-    def handle_audio_chunk(data):
-        # 'data' is the received audio chunk
-        # Append this chunk to an audio file or process as needed
-        print("Received an audio chunk")
-
-    @sio.on('some_event')
-    def handle_some_event(data):
-        # This will broadcast the message to all clients except the sender
-        socketio.emit('someEvent', data, broadcast=True)
-
-    @sio.on('stream-speak')
-    def handle_text_data(json):
-        text = json['text']
-
-        asyncio.get_event_loop().run_until_complete(
-            websockets.connect(
-                lambda ws: text_to_speech(ws, text)
-            )
-        )
