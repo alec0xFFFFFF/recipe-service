@@ -75,10 +75,17 @@ def audio_get_recipe_options():
     return str("no file"), 400
 
 
+@bp.route("/eleven-labs", methods=['GET'])
+def eleven_labs():
+    return os.getenv("ELEVEN_LABS_KEY")
+
+
 @bp.route('/chat', methods=['POST'])
 def chat():
     print("chat recieved")
     msg = request.json['content']
+    # todo run classifier for recommendation, response, technique and
+    # persist messages and use history in request
     print(f"Chat request: {msg}")
     closest_embeddings = get_nearest_recipes(msg)
     numbered_recipes = "\n".join(

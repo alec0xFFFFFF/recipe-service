@@ -29,5 +29,11 @@ Use Case:
 - thanksgiving
 - weekend trip/airbnb rentals create shopping list
 
-Use gpt-v if not great 
-https://stackoverflow.com/questions/77284901/upload-an-image-to-chat-gpt-using-the-api
+
+Ranked tasks
+1. add conversation/message models and tables and store these
+2. add user
+3. add additional context object -> display recipe options
+4. add shopping list/meal plan
+5. add actions -> add to shopping list
+   - add to shopping list, what's on shopping list, dietary restrictions

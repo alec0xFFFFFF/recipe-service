@@ -103,6 +103,56 @@ class PantryItemEmbeddings(db.Model):
         }
 
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.Text, unique=True, nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+        }
+
+
+class Conversation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(DateTime, default=datetime.utcnow)
+    updated_at = db.Column(DateTime, default=datetime.utcnow)
+    deleted = db.Column(Boolean, nullable=False, default=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at,
+            'deleted': self.deleted,
+        }
+
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, ForeignKey('conversation.id'), nullable=False)
+    user_id = db.Column(db.Integer, ForeignKey('user.id'), nullable=False)
+    role = db.Column(db.Text, nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(DateTime, default=datetime.utcnow)
+    updated_at = db.Column(DateTime, default=datetime.utcnow)
+    deleted = db.Column(Boolean, nullable=False, default=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'conversation_id': self.conversation_id,
+            'role': self.role,
+            'content': self.content,
+            'user_id': self.user_id,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at,
+            'deleted': self.deleted,
+        }
+
 def after_description_create_listener(target, connection, **kw):
     connection.execute(text(
         "ALTER TABLE description_embeddings ALTER COLUMN embeddings TYPE vector(3072) USING embeddings::vector(3072);"))
