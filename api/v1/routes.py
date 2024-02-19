@@ -486,9 +486,12 @@ def speak():
 # Async route for text-to-speech conversion
 @bp.route('/tts', methods=['POST'])
 async def tts():
+    print("TTS req")
     data = request.json
     user_query = data['query']
+    print(f"user_query: {user_query}")
     audio_stream = asyncio.create_task(chat_completion(user_query))
+    print(f"audio_stream: {audio_stream}")
     return Response(stream_with_context(audio_stream_generator(audio_stream)), mimetype='audio/mpeg')
 
 
