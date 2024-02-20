@@ -39,6 +39,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 aclient = AsyncOpenAI(api_key=OPENAI_API_KEY)
 VOICE_ID = '21m00Tcm4TlvDq8ikWAM'
 
+
 # Initialize Google OAuth in the Blueprint
 def get_google_oauth_client():
     return OAuth(current_app).register(

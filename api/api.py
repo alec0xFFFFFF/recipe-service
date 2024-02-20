@@ -42,4 +42,4 @@ def create_api():
     from api.v1.routes import init_api_v1
     init_api_v1(app)
 
-    return app, google
+    return app
