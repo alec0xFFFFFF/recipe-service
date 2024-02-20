@@ -11,10 +11,16 @@ import requests
 import websockets
 from botocore.exceptions import NoCredentialsError
 from elevenlabs import generate, stream, set_api_key
-from flask import Blueprint, request, jsonify, send_file, stream_with_context, Response
+from flask import Blueprint, request, jsonify, send_file, stream_with_context, Response, url_for, redirect
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 from openai import AsyncOpenAI
 from psycopg2.extras import NumericRange
 from sqlalchemy.exc import IntegrityError
+from werkzeug.security import generate_password_hash, check_password_hash
+import jwt
+import time
+from authlib.integrations.flask_client import OAuth
+from flask import current_app
 
 import extract
 from agents import baseAgent
@@ -22,7 +28,8 @@ from sqlalchemy import text
 from werkzeug.utils import secure_filename
 
 from agents.baseAgent import Agent
-from data.models import db, Recipe, DescriptionEmbeddings, IngredientsEmbeddings
+from data.models import db, Recipe, DescriptionEmbeddings, IngredientsEmbeddings, Message, User
+
 WEBRTC_SERVER_URL = os.getenv('WEBRTC_SERVER_URL')  # Replace with your WebRTC server endpoint
 
 bp = Blueprint('bp', __name__)
@@ -31,6 +38,20 @@ set_api_key(os.getenv("ELEVEN_LABS_KEY"))
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 aclient = AsyncOpenAI(api_key=OPENAI_API_KEY)
 VOICE_ID = '21m00Tcm4TlvDq8ikWAM'
+
+# Initialize Google OAuth in the Blueprint
+def get_google_oauth_client():
+    return OAuth(current_app).register(
+        name='google',
+        client_id=os.getenv('GOOGLE_CLIENT_ID'),
+        client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+        access_token_url='https://accounts.google.com/o/oauth2/token',
+        access_token_params=None,
+        authorize_url='https://accounts.google.com/o/oauth2/auth',
+        authorize_params=None,
+        api_base_url='https://www.googleapis.com/oauth2/v1/',
+        client_kwargs={'scope': 'openid email profile'}
+    )
 
 
 def is_only_whitespace(s):
@@ -84,10 +105,165 @@ def audio_get_recipe_options():
 def eleven_labs():
     return os.getenv("ELEVEN_LABS_KEY")
 
+@bp.route('/login/apple')
+def apple_login():
+    request_uri = url_for('apple_authorize', _external=True)
+    state = 'YOUR_STATE'  # Generate or manage state as needed
+    return redirect(f'https://appleid.apple.com/auth/authorize?response_type=code&state={state}&client_id={os.getenv("APPLE_CLIENT_ID")}&redirect_uri={request_uri}&scope=name%20email')
+
+@bp.route('/login/apple/authorize')
+def apple_authorize():
+    code = request.args.get('code')
+    state = request.args.get('state')
+    # Verify the 'state' value if you used one for CSRF protection
+
+    client_secret = create_apple_client_secret()
+    headers = {'content-type': "application/x-www-form-urlencoded"}
+    data = {
+        'client_id': os.getenv('APPLE_CLIENT_ID'),
+        'client_secret': client_secret,
+        'code': code,
+        'grant_type': 'authorization_code',
+        'redirect_uri': url_for('apple_authorize', _external=True)
+    }
+    response = requests.post('https://appleid.apple.com/auth/token', headers=headers, data=data)
+    response_data = response.json()
+
+    # Decode ID token to get user info
+    id_token = response_data['id_token']
+    decoded = jwt.decode(id_token, options={"verify_signature": False})
+    apple_id = decoded['sub']
+
+    user = User.query.filter_by(apple_id=apple_id).first()
+    if not user:
+        user = User(
+            username=decoded.get('email', f'apple_{apple_id}'),
+            apple_id=apple_id
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    access_token = create_access_token(identity=user.id)
+    return jsonify(access_token=access_token)
+
+def create_apple_client_secret():
+    time_now = int(time.time())
+    payload = {
+        'iss': os.getenv('APPLE_TEAM_ID'),
+        'iat': time_now,
+        'exp': time_now + 3600,
+        'aud': 'https://appleid.apple.com',
+        'sub': os.getenv('APPLE_CLIENT_ID'),
+    }
+    headers = {'kid': os.getenv('APPLE_KEY_ID')}
+    client_secret = jwt.encode(payload, os.getenv('APPLE_PRIVATE_KEY'), algorithm='ES256', headers=headers)
+    return client_secret
+
+@bp.route('/login/google')
+def google_login():
+    google = get_google_oauth_client()
+    redirect_uri = url_for('google_authorize', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+@bp.route('/login/google/authorize')
+def google_authorize():
+    google = get_google_oauth_client()
+    token = google.authorize_access_token()
+    resp = google.get('userinfo')
+    user_info = resp.json()
+    user = User.query.filter_by(google_id=user_info['id']).first()
+    if not user:
+        user = User(
+            username=user_info['name'],
+            google_id=user_info['id']
+            # You can store other info as needed
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    access_token = create_access_token(identity=user.id)
+    return jsonify(access_token=access_token)
+
+
+@bp.route('/signup', methods=['POST'])
+def signup():
+    username = request.json.get('username', None)
+    password = request.json.get('password', None)
+    if not username or not password:
+        return jsonify({"msg": "Missing username or password"}), 400
+    if User.query.filter_by(username=username).first():
+        return jsonify({"msg": "Username already exists"}), 409
+
+    hashed_password = generate_password_hash(password)
+    new_user = User(username=username, password_hash=hashed_password)
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({"msg": "User created successfully"}), 201
+
+
+@bp.route('/login', methods=['POST'])
+def login():
+    username = request.json.get('username', None)
+    password = request.json.get('password', None)
+    user = User.query.filter_by(username=username).first()
+    if user and check_password_hash(user.password_hash, password):
+        access_token = create_access_token(identity=username)
+        return jsonify(access_token=access_token), 200
+    else:
+        return jsonify({"msg": "Invalid username or password"}), 401
+
+
+def rehydrate_conversation(conversation_id, user_id):
+    # query to get all messages in conversation and put in format
+    messages = Message.query.filter_by(id=conversation_id, user_id=user_id).all()
+    if len(messages) == 0:
+        return []
+    return [{'role': message.role, 'content': message.content} for message in messages]
+
+
+def classify(message):
+    pass
+
+
+@bp.route('/chat/<int:conversation_id>', methods=['POST'])
+@jwt_required()
+def persistedChat(conversation_id):
+    print("chat received")
+    msg = request.json['content']
+    current_user = get_jwt_identity()
+    user_id = 0
+    conversation = rehydrate_conversation(conversation_id, user_id)
+    # todo persist this message
+    most_recent_msg = {'role': 'user', 'content': msg}
+    conversation.append(most_recent_msg)
+    # todo run classifier for recommendation, response, technique and
+    # persist messages and use history in request
+    classifier_result = classify(most_recent_msg)
+    if classifier_result == 'get_recipe':
+        print(f"Chat request: {msg}")
+        closest_embeddings = get_nearest_recipes(msg)
+        numbered_recipes = "\n".join(
+            [f"{i + 1}. Title: {item['title']}, Description: {item['description']}" for i, item in
+             enumerate(closest_embeddings)])
+        # generate a response based on user
+        agent = baseAgent.Agent()
+        response = agent.generate_response(
+            f"You are a culinary assistant and your job is to pitch recipes for the user to make for their next meal.Your response will be read directly by a narrator so make it cohesive and don't label the options with numbers. if any recipe looks incomplete or has `sorry` in it you must not give that option. Address the user's recipe request by describing and pitching the following recipes: {numbered_recipes}",
+            msg)
+        # todo persist this message
+        print(f"recommendations: {response}")
+        return jsonify({"content": response})
+    elif classifier_result == 'modify_recipe':
+        # determine which recipe to modify from conversation
+        pass
+    elif classifier_result == '':
+        pass
+    return 'error', 500
+
 
 @bp.route('/chat', methods=['POST'])
 def chat():
-    print("chat recieved")
+    print("chat received")
     msg = request.json['content']
     # todo run classifier for recommendation, response, technique and
     # persist messages and use history in request
@@ -465,6 +641,7 @@ def search_pantry():
 
     return jsonify(closest_embeddings)
 
+
 def generate_example_text(text):
     yield "Hello world"
     yield "this is a test"
@@ -480,7 +657,6 @@ def speak():
         stream=True
     )
     stream(audio)
-
 
 
 # Async route for text-to-speech conversion
@@ -573,32 +749,9 @@ async def audio_stream_generator(audio_stream):
         yield chunk
 
 
-
-
-@bp.route('/offer', methods=['POST'])
-def offer():
-    data = request.get_json()
-    user_query = data.get("userQuery")  # Extract the user query
-
-    # todo accept audio file or text file then run the search and format and return
-
-    # Forward the offer and user query to the WebRTC server
-    webrtc_response = requests.post(WEBRTC_SERVER_URL, json={
-        'sdp': data['sdp'],
-        'type': data['type'],
-        'userQuery': user_query
-    })
-
-    # Assuming the WebRTC server responds with an SDP answer
-    return jsonify(webrtc_response.json())
-
-
 # todo recommend recipe based on my pantry
 
 # create shopping list from recipes i've added and my pantry
 
-# create account via google and apple
-
 def init_api_v1(app):
     app.register_blueprint(bp, url_prefix='/v1')
-

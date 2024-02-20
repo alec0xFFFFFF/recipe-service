@@ -106,6 +106,10 @@ class PantryItemEmbeddings(db.Model):
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.Text, unique=True, nullable=False)
+    username = db.Column(db.String(50), nullable=False, unique=True)
+    password_hash = db.Column(db.String(128), nullable=True)
+    google_id = db.Column(db.String(150), unique=True, nullable=True)
+    apple_id = db.Column(db.String(150), unique=True, nullable=True)
 
     def to_dict(self):
         return {

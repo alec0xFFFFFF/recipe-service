@@ -37,3 +37,4 @@ Ranked tasks
 4. add shopping list/meal plan
 5. add actions -> add to shopping list
    - add to shopping list, what's on shopping list, dietary restrictions
+6. techniques (action and store)
